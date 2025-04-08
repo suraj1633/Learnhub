@@ -1,0 +1,73 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Manage Courses - LearnHub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Your Courses</h1>
+    <a href="{{ url_for('add_course') }}" class="btn btn-primary">Add New Course</a>
+</div>
+
+<div class="courses-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>Students</th>
+                <th>Rating</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>
+                    <div class="course-info-cell">
+                        <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
+                        <div>
+                            <h4>{{ course.title }}</h4>
+                            <p>{{ course.category }}</p>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ course.enrollments|length }}</td>
+                <td>
+                    {% set avg_rating = namespace(value=0) %}
+                    {% set review_count = course.reviews|length %}
+                    {% if review_count > 0 %}
+                        {% set total = namespace(value=0) %}
+                        {% for review in course.reviews %}
+                            {% set total.value = total.value + review.rating %}
+                        {% endfor %}
+                        {% set avg_rating.value = total.value / review_count %}
+                    {% endif %}
+                    <div class="rating">
+                        {% for i in range(5) %}
+                            {% if i < avg_rating.value|round %}
+                                ★
+                            {% else %}
+                                ☆
+                            {% endif %}
+                        {% endfor %}
+                        ({{ "%.1f"|format(avg_rating.value) if review_count > 0 else "No ratings" }})
+                    </div>
+                </td>
+                <td>${{ "%.2f"|format(course.price) }}</td>
+                <td>
+                    <span class="status-badge published">Published</span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

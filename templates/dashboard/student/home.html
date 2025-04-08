@@ -1,0 +1,51 @@
+{% extends "dashboard/student/base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
+</div>
+
+<div class="welcome-section">
+    <div class="stats-card">
+        <h3>Enrolled Courses</h3>
+        <p>{{ enrolled_courses|length }}</p>
+    </div>
+    <div class="stats-card">
+        <h3>Completed Courses</h3>
+        <p>{{ completed_courses }}</p>
+    </div>
+</div>
+
+<div class="courses-section">
+    <h2>Your Recent Courses</h2>
+    
+    {% if enrolled_courses|length == 0 %}
+        <div class="no-courses-message">
+            <p>You have no courses enrolled. Please enroll in a course to get started!</p>
+            <a href="{{ url_for('courses') }}" class="btn btn-primary">Browse Courses</a>
+        </div>
+    {% else %}
+        <div class="courses-grid">
+            {% for enrollment in enrolled_courses[:3] %}
+            <div class="course-card">
+                <div class="course-progress">
+                    <div class="progress-bar" style="width: {{ enrollment.progress if enrollment.progress is not none else 0 }}%"></div>
+                </div>
+                <div class="course-thumbnail">
+                    <img src="{{ url_for('static', filename=enrollment.course.thumbnail_url) if enrollment.course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ enrollment.course.title }}">
+                </div>
+                <div class="course-info">
+                    <h3>{{ enrollment.course.title }}</h3>
+                    <div class="progress-text">{{ enrollment.progress }}% Complete</div>
+                    {% if enrollment.completed %}
+                        <button class="btn btn-success">Completed</button>
+                    {% else %}
+                        <a href="{{ url_for('view_course', course_id=enrollment.course.course_id) }}" class="btn btn-primary">Continue</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "dashboard/student/base.html" %}
+
+{% block title %}My Courses - LearnHub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>My Courses</h1>
+    <div class="course-filter">
+        <select>
+            <option>All Courses</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+        </select>
+    </div>
+</div>
+
+<div class="courses-grid">
+    {% for course, enrollment in enrolled_courses %}
+    <div class="course-card">
+        <div class="course-progress">
+            <div class="progress-bar" style="width: {{ enrollment.progress }}%"></div>
+        </div>
+        <div class="course-thumbnail">
+            <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
+        </div>
+        <div class="course-info">
+            <h3>{{ course.title }}</h3>
+            <p class="instructor">By {{ course.instructor.username }}</p>
+            <div class="progress-text">{{ enrollment.progress }}% Complete</div>
+            {% if enrollment.completed %}
+                <button class="btn btn-success">Completed</button>
+            {% else %}
+                <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">Continue</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

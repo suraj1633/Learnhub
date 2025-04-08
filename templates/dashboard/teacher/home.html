@@ -1,0 +1,44 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Teacher Dashboard - LearnHub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome, {{ current_user.first_name or current_user.username }}!</h1>
+    <p>Manage your courses and students</p>
+</div>
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <h3>Your Courses</h3>
+        <p class="stat-value">{{ courses|length }}</p>
+        <a href="{{ url_for('teacher_courses') }}">View All</a>
+    </div>
+    <div class="stat-card">
+        <h3>Total Students</h3>
+        <p class="stat-value">
+            {% set student_count = namespace(total=0) %}
+            {% for course in courses %}
+                {% set student_count.total = student_count.total + course.enrollments|length %}
+            {% endfor %}
+            {{ student_count.total }}
+        </p>
+    </div>
+    <div class="stat-card">
+        <h3>Total Earnings</h3>
+        <p class="stat-value">
+            ${% set earnings = namespace(total=0) %}
+            {% for course in courses %}
+                {% set earnings.total = earnings.total + (course.price * course.enrollments|length) %}
+            {% endfor %}
+            {{ "%.2f"|format(earnings.total) }}
+        </p>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('add_course') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Course
+    </a>
+</div>
+{% endblock %}

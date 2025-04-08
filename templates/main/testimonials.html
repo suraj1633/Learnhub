@@ -1,0 +1,26 @@
+{% extends "main/base.html" %}
+
+{% block title %}Testimonials - LearnHub{% endblock %}
+
+{% block content %}
+<section class="testimonials-section">
+    <div class="container">
+        <h1>What Our Students Say</h1>
+        
+        <div class="testimonials-grid">
+            {% for testimonial in testimonials %}
+            <div class="testimonial-card">
+                <div class="student-info">
+                    <img src="{{ url_for('static', filename=testimonial.profile_pic) if testimonial.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ testimonial.username }}">
+                    <h4>{{ testimonial.username }}</h4>
+                </div>
+                <div class="testimonial-content">
+                    <p>"{{ testimonial.content }}"</p>
+                    <div class="rating">★★★★★</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "dashboard/student/base.html" %}
+
+{% block title %}My Cart - LearnHub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>My Cart</h1>
+    <p>{{ cart_items|length }} courses in cart</p>
+</div>
+
+<div class="cart-container">
+    <div class="cart-items">
+        {% for item in cart_items %}
+        <div class="cart-item">
+            <div class="course-thumbnail">
+                <img src="{{ url_for('static', filename=item.thumbnail_url) if item.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ item.title }}">
+            </div>
+            <div class="course-details">
+                <h3>{{ item.title }}</h3>
+                <p class="instructor">By {{ item.teacher_username }}</p>
+                <p class="price">${{ item.price }}</p>
+            </div>
+            <div class="cart-actions">
+                <button class="btn btn-danger remove-from-cart" data-course-id="{{ item.course_id }}">Remove</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="cart-summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+            <span>Subtotal:</span>
+            <span>${{ subtotal }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Discount:</span>
+            <span>$0.00</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total:</span>
+            <span>${{ subtotal }}</span>
+        </div>
+        <button class="btn btn-primary btn-block checkout-btn">Proceed to Checkout</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}

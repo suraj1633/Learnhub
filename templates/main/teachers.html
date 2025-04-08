@@ -1,0 +1,27 @@
+{% extends "main/base.html" %}
+
+{% block title %}Our Instructors - LearnHub{% endblock %}
+
+{% block content %}
+<section class="teachers-section">
+    <div class="container">
+        <h1>Meet Our Instructors</h1>
+        <p class="subtitle">Learn from industry experts and passionate educators</p>
+        
+        <div class="teachers-grid">
+            {% for teacher in teachers %}
+            <div class="teacher-card">
+                <div class="teacher-photo">
+                    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ teacher.username }}">
+                </div>
+                <div class="teacher-info">
+                    <h3>{{ teacher.username }}</h3>
+                    <p class="specialty">Web Development Instructor</p>
+                    <a href="#" class="btn">View Profile</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

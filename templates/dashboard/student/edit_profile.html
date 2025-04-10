@@ -12,6 +12,7 @@
         <img id="profile-preview" src="{{ url_for('static', filename=current_user.profile_pic) if current_user.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="Profile Picture">
         <div class="upload-controls">
             <input type="file" id="profile_pic" name="profile_pic" accept="image/*">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label for="profile_pic" class="btn">Change Photo</label>
         </div>
     </div>

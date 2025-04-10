@@ -16,6 +16,7 @@
             <div class="contact-form">
                 <h2>Send Us a Message</h2>
                 <form action="#" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <input type="text" name="name" placeholder="Your Name" required>
                     </div>

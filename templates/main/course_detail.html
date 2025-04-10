@@ -50,6 +50,7 @@
                     </a>
                 {% else %}
                     <form action="{{ url_for('enroll_course', course_id=course.course_id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary">Enroll Now</button>
                     </form>
                 {% endif %}
@@ -64,27 +65,23 @@
         <p>{{ course.description }}</p>
     </div>
 
-    <div class="course-content">
-        <h2>Course Content</h2>
-        <div class="content-list">
+    <!-- Add this section where you display course content -->
+    <div class="course-curriculum">
+        <h3>Course Curriculum</h3>
+        <ul class="curriculum-list">
             {% for item in content %}
-            <div class="content-item">
-                <div class="content-icon">
-                    {% if item.content_type == 'video' %}
-                        <i class="fas fa-video"></i>
-                    {% elif item.content_type == 'document' %}
-                        <i class="fas fa-file-alt"></i>
-                    {% else %}
-                        <i class="fas fa-question-circle"></i>
-                    {% endif %}
-                </div>
-                <div class="content-info">
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.description or '' }}</p>
-                </div>
-            </div>
+            <li>
+                {% if enrollment %}
+                    <a href="{{ url_for('view_course_content', course_id=course.course_id, content_id=item.content_id) }}">
+                {% else %}
+                    <a href="#" class="disabled" onclick="alert('You need to enroll in this course first')">
+                {% endif %}
+                    <i class="fas fa-{{ 'play-circle' if item.content_type == 'video' else 'file-alt' }}"></i>
+                    {{ item.title }}
+                </a>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
     </div>
 
     <div class="course-reviews">
@@ -126,6 +123,7 @@
             <div class="add-review">
                 <h3>Add Your Review</h3>
                 <form action="{{ url_for('add_review', course_id=course.course_id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label>Rating</label>
                         <select name="rating" required>

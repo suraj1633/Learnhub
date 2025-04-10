@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+<style>
+    /* Video container styles */
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .video-container iframe,
+    .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    /* Navigation buttons */
+    .auth-buttons .btn {
+        margin-left: 0.5rem;
+    }
+    
+    /* Layout improvements */
+    .course-video-container {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 2rem;
+        align-items: start;
+    }
+    
+    @media (max-width: 768px) {
+        .course-video-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .course-content-sidebar {
+            order: -1;
+        }
+    }
+    
+    /* Play overlay styles */
+    .play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0,0,0,0.5);
+        cursor: pointer;
+        z-index: 10;
+    }
+    
+    .play-button {
+        width: 80px;
+        height: 80px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    
+    .play-button:hover {
+        transform: scale(1.1);
+        background: rgba(255,255,255,1);
+    }
+    
+    .play-button i {
+        font-size: 2.5rem;
+        color: #333;
+        margin-left: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block navigation %}
+<nav class="flex items-center justify-between p-4 bg-white shadow-sm">
+    <div class="flex items-center space-x-4">
+        <a href="/" class="text-xl font-bold">MyCourse</a>
+    </div>
+    <div class="auth-buttons">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
+                <i class="fas fa-sign-in-alt mr-2"></i>Login
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus mr-2"></i>Register
+            </a>
+        {% endif %}
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="course-video-container">
+    <div class="video-player">
+        {% if content.content_type == 'video' %}
+            {% if content.url.startswith('https://www.youtube.com') or content.url.startswith('https://youtu.be') %}
+                <!-- YouTube Embed -->
+                <div class="video-container">
+                    {% set youtube_id = content.url.split('v=')[1].split('&')[0] if 'v=' in content.url else content.url.split('/')[-1] %}
+                    <iframe 
+                        src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1&origin={{ request.host_url }}&rel=0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            {% else %}
+                <!-- Local Video Player -->
+                <div class="video-container">
+                    <video id="course-video" controls playsinline>
+                        <source src="{{ content.url }}" type="video/mp4">
+                        Your browser doesn't support HTML5 video
+                    </video>
+                    <div id="play-overlay" class="play-overlay">
+                        <div class="play-button">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Document Viewer -->
+            <div class="document-viewer">
+                <iframe src="{{ content.url }}" class="w-full min-h-[500px] border rounded-lg"></iframe>
+            </div>
+        {% endif %}
+        
+        <!-- Video Controls -->
+        <div class="video-controls mt-6">
+            <h2 class="text-2xl font-bold mb-4">{{ content.title }}</h2>
+            <div class="flex space-x-4">
+                <button id="rewatch-btn" class="btn btn-secondary px-6 py-2">
+                    <i class="fas fa-redo mr-2"></i> Rewatch
+                </button>
+                <button id="complete-btn" class="btn btn-primary px-6 py-2">
+                    <i class="fas fa-check mr-2"></i> Mark as Completed
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Course Content Sidebar -->
+    <div class="course-content-sidebar bg-white p-4 rounded-lg shadow-sm">
+        <h3 class="text-lg font-semibold mb-4 pb-2 border-b">Course Content</h3>
+        <ul class="content-list space-y-2">
+            {% for item in all_content %}
+            <li class="{% if item.content_id == content.content_id %}active bg-blue-50 border-l-4 border-blue-500{% endif %} p-3 rounded hover:bg-gray-50 transition">
+                <a href="{{ url_for('view_course_content', course_id=course_id, content_id=item.content_id) }}" class="flex items-center">
+                    <i class="fas fa-{{ 'play-circle text-blue-500' if item.content_type == 'video' else 'file-alt text-gray-500' }} mr-3"></i>
+                    <span class="flex-grow">{{ item.title }}</span>
+                    {% if item.progress_records and item.progress_records[0].completed %}
+                    <span class="text-green-500 ml-2"><i class="fas fa-check-circle"></i></span>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('course-video');
+    const playOverlay = document.getElementById('play-overlay');
+    
+    // Initialize local video player if exists
+    if (video && playOverlay) {
+        // Hide overlay when video starts playing
+        video.addEventListener('play', function() {
+            playOverlay.style.display = 'none';
+        });
+        
+        // Handle play overlay click
+        playOverlay.addEventListener('click', function() {
+            video.play().catch(e => {
+                console.error('Playback failed:', e);
+                playOverlay.innerHTML = `
+                    <div class="text-white text-center p-4">
+                        <p>Click to enable playback</p>
+                        <small class="text-sm opacity-80">Or try refreshing the page</small>
+                    </div>
+                `;
+            });
+        });
+    }
+    
+    // Rest of your existing JavaScript...
+    const controls = document.getElementById('video-controls');
+    const completeBtn = document.getElementById('complete-btn');
+    const rewatchBtn = document.getElementById('rewatch-btn');
+    
+    completeBtn?.addEventListener('click', function() {
+        fetch("{{ url_for('mark_content_completed', course_id=course_id, content_id=content.content_id) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCSRF()
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const allItems = Array.from(document.querySelectorAll('.content-list li a'));
+                const currentIndex = allItems.findIndex(item => 
+                    item.getAttribute('href').includes('{{ content.content_id }}'));
+                
+                if (currentIndex < allItems.length - 1) {
+                    window.location.href = allItems[currentIndex + 1].getAttribute('href');
+                } else {
+                    window.location.href = "{{ url_for('view_course', course_id=course_id) }}";
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+    
+    rewatchBtn?.addEventListener('click', function() {
+        if (video) {
+            video.currentTime = 0;
+            video.play().then(() => {
+                if (controls) controls.style.display = 'none';
+            }).catch(e => console.log('Rewatch failed:', e));
+        }
+    });
+    
+    function getCSRF() {
+        return document.querySelector('meta[name="csrf-token"]')?.content || '';
+    }
+});
+</script>
+{% endblock %}

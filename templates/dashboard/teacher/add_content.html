@@ -1,0 +1,41 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Add Content - LearnHub{% endblock %}
+
+{% block content %}
+<div class="dashboard-content">
+    <h2>Add Content to {{ course.title }}</h2>
+    
+    <form action="{{ url_for('add_course_content', course_id=course.course_id) }}" method="POST">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description (Optional)</label>
+            <textarea id="description" name="description" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="content_type">Content Type</label>
+            <select id="content_type" name="content_type" required>
+                <option value="video">Video</option>
+                <option value="document">Document</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="url">Content URL</label>
+            <input type="url" id="url" name="url" required>
+            <small>For videos: YouTube URL or direct video file URL</small>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Add Content</button>
+            <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

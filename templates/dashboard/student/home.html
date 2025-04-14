@@ -1,51 +1,82 @@
 {% extends "dashboard/student/base.html" %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
 {% block content %}
-<div class="dashboard-header">
-    <h1>Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
-</div>
-
-<div class="welcome-section">
-    <div class="stats-card">
-        <h3>Enrolled Courses</h3>
-        <p>{{ enrolled_courses|length }}</p>
+<div class="dashboard-container">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1>Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
     </div>
-    <div class="stats-card">
-        <h3>Completed Courses</h3>
-        <p>{{ completed_courses }}</p>
-    </div>
-</div>
 
-<div class="courses-section">
-    <h2>Your Recent Courses</h2>
-    
-    {% if enrolled_courses|length == 0 %}
-        <div class="no-courses-message">
-            <p>You have no courses enrolled. Please enroll in a course to get started!</p>
-            <a href="{{ url_for('courses') }}" class="btn btn-primary">Browse Courses</a>
-        </div>
-    {% else %}
-        <div class="courses-grid">
-            {% for enrollment in enrolled_courses[:3] %}
-            <div class="course-card">
-                <div class="course-progress">
-                    <div class="progress-bar" style="width: {{ enrollment.progress if enrollment.progress is not none else 0 }}%"></div>
-                </div>
-                <div class="course-thumbnail">
-                    <img src="{{ url_for('static', filename=enrollment.course.thumbnail_url) if enrollment.course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ enrollment.course.title }}">
-                </div>
-                <div class="course-info">
-                    <h3>{{ enrollment.course.title }}</h3>
-                    <div class="progress-text">{{ enrollment.progress }}% Complete</div>
-                    {% if enrollment.completed %}
-                        <button class="btn btn-success">Completed</button>
-                    {% else %}
-                        <a href="{{ url_for('view_course', course_id=enrollment.course.course_id) }}" class="btn btn-primary">Continue</a>
-                    {% endif %}
-                </div>
+    <!-- Stats Cards -->
+    <div class="stats-container">
+        <div class="stats-card enrolled">
+            <div class="stats-content">
+                <h3>Enrolled Courses</h3>
+                <p class="count">{{ enrolled_courses|length }}</p>
             </div>
-            {% endfor %}
+            <i class="fas fa-book-open stats-icon"></i>
         </div>
-    {% endif %}
+        
+        <div class="stats-card completed">
+            <div class="stats-content">
+                <h3>Completed Courses</h3>
+                <p class="count">{{ completed_courses }}</p>
+            </div>
+            <i class="fas fa-check-circle stats-icon"></i>
+        </div>
+    </div>
+
+    <!-- Recent Courses -->
+    <div class="recent-courses">
+        <h2>Your Recent Courses</h2>
+        
+        {% if enrolled_courses|length == 0 %}
+            <div class="no-courses">
+                <p>You have no courses enrolled. Please enroll in a course to get started!</p>
+                <a href="{{ url_for('courses') }}" class="btn browse-btn">Browse Courses</a>
+            </div>
+        {% else %}
+            <div class="courses-grid">
+                {% for enrollment in enrolled_courses[:3] %}
+                <div class="course-card">
+                    <div class="course-thumbnail">
+                        <img src="{{ url_for('static', filename=enrollment.course.thumbnail_url) if enrollment.course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" 
+                             alt="{{ enrollment.course.title }}">
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: {{ enrollment.progress if enrollment.progress is not none else 0 }}%"></div>
+                        </div>
+                        <span class="progress-text">{{ enrollment.progress }}% Complete</span>
+                    </div>
+                    <div class="course-details">
+                        <h3>{{ enrollment.course.title }}</h3>
+                        <div class="course-actions">
+                            {% if enrollment.completed %}
+                                <button class="btn completed-btn">
+                                    <i class="fas fa-check"></i> Completed
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('view_course', course_id=enrollment.course.course_id) }}" class="btn continue-btn">
+                                    <i class="fas fa-play"></i> Continue
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if enrolled_courses|length > 3 %}
+            <div class="view-all">
+                <a href="{{ url_for('student_courses') }}" class="btn view-all-btn">View All Courses</a>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

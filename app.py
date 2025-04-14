@@ -26,7 +26,7 @@ app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_COOKIE_SECURE'] = False
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mysql%40123@localhost/learnhub'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Suraj*12@localhost/learnhub'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/images'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -175,7 +175,7 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            access_token = create_access_token(identity=user.user_id)
+            access_token = create_access_token(identity=str(user.user_id))
             response = make_response(redirect(url_for('student_dashboard' if user.user_type == 'student' else 'teacher_dashboard')))
             set_access_cookies(response, access_token)
             flash('Logged in successfully!', 'success')

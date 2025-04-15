@@ -1161,6 +1161,10 @@
     gap: var(--space-sm);
     align-items: center;
   }
+
+  .auth-buttons:hover {
+    color:white;
+  }
   
   .btn {
     padding: var(--space-sm) var(--space-md);
@@ -1453,6 +1457,8 @@ input[type="password"]:hover {
   padding: 20px;
   color:white;
 }
+
+
 
 /* Animations */
 @keyframes fadeIn {

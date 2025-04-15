@@ -11,21 +11,5 @@
     </div>
 </section>
 
-<section class="featured-courses">
-    <div class="container">
-        <h2>Featured Courses</h2>
-        <div class="course-grid">
-            {% for course in featured_courses %}
-            <div class="course-card">
-                <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" 
-                     alt="{{ course.title }}">
-                <h3>{{ course.title }}</h3>
-                <p class="instructor">By {{ course.instructor.username }}</p>
-                <div class="price">${{ "%.2f"|format(course.price) }}</div>
-                <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">View Course</a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
+
 {% endblock %}

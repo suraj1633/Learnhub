@@ -266,7 +266,7 @@
 
 .view-all-btn {
     background-color: transparent;
-    color: var(--primary);
+    color: var(--white);
     border: 2px solid var(--primary);
     width: auto;
     padding: 0.7rem 1.5rem;

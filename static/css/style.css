@@ -53,12 +53,20 @@
     padding: 0;
     box-sizing: border-box;
   }
+
+  html, body {
+    height: 100%;
+}
   
   body {
+    display: flex;
+    flex-direction: column;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--light);
     color: var(--text);
     line-height: 1.6;
+     flex: 1 0 auto; /* Grow to fill space, don't shrink */
+    width: 100%;
   }
   
   .container {
@@ -254,9 +262,11 @@
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--space-lg);
     margin: var(--space-lg) 0;
+    height:100%;
   }
   
   .course-card {
+    height:400px;
     background-color: var(--white);
     border-radius: var(--rounded-lg);
     overflow: hidden;
@@ -588,6 +598,38 @@
   color: var(--text-light);
   max-width: 500px;
   margin: 0 auto var(--space-lg);
+}
+
+.hero {
+  height:100%;
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+  color: white;
+  padding: 10rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero p {
+  color:white;
+  font-size: 1.5rem;
+  margin-bottom: 2.5rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.9;
 }
 
 /* ===== Responsive Adjustments ===== */
@@ -1114,6 +1156,7 @@
   }
   
   .auth-buttons {
+    width:340px;
     display: flex;
     gap: var(--space-sm);
     align-items: center;
@@ -1396,6 +1439,19 @@ input[type="password"]:hover {
   border-color: #667eea;
   color: #667eea;
   font-weight: 600;
+}
+
+.main-content{
+  flex: 1 0 auto; /* Grow to fill space, don't shrink */
+  width: 100%;
+}
+
+.main-footer{
+  flex-shrink: 0;
+  text-align:center;
+  background-color: gray;
+  padding: 20px;
+  color:white;
 }
 
 /* Animations */

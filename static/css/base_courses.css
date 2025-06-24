@@ -1,199 +1,228 @@
-/* courses.css */
-
-/* Base Styles */
+/* Modern Courses Page - Matches Home Theme */
+:root {
+    --primary: #2563eb;
+    --primary-light: #60a5fa;
+    --primary-dark: #1d4ed8;
+    --secondary: #4f46e5;
+    --text: #f3f4f6;
+    --text-light: #9ca3af;
+    --background: #1f2937;
+    --card-background: #2d3748;
+    --shadow: 0 4px 24px 0 rgba(37,99,235,0.10), 0 1.5px 6px 0 rgba(0,0,0,0.04);
+    --shadow-hover: 0 12px 32px 0 rgba(37,99,235,0.16), 0 2px 8px 0 rgba(0,0,0,0.08);
+    --border-radius: 1.2rem;
+    --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+body {
+    background: var(--background);
+    color: var(--text);
+}
 .courses-section {
-    padding: 2rem 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    padding: 3rem 0 5rem 0;
+    background: none;
     min-height: 80vh;
 }
-
 .container {
-    width: 90%;
-    max-width: 1200px;
+    width: 95%;
+    max-width: 1280px;
     margin: 0 auto;
 }
-
-/* Header Section */
 .courses-header {
     margin-bottom: 2.5rem;
     text-align: center;
 }
-
 .courses-header h1 {
-    font-size: 2.5rem;
-    color: #2c3e50;
+    font-size: 2.7rem;
+    color: var(--primary);
     margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+    font-weight: 800;
 }
-
 .search-filter {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 1.2rem;
     flex-wrap: wrap;
+    margin-top: 0.5rem;
 }
-
-.search-filter input {
-    padding: 0.8rem 1.2rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 300px;
-    max-width: 100%;
-    font-size: 1rem;
-    transition: all 0.3s ease;
+.search-filter input, .search-filter select {
+    padding: 1rem 1.5rem;
+    border: 1.5px solid var(--primary);
+    border-radius: 1.2rem;
+    font-size: 1.08rem;
+    background: #fff;
+    color: var(--text);
+    box-shadow: 0 2px 8px 0 rgba(37,99,235,0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.search-filter input:focus {
+.search-filter input:focus, .search-filter select:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 2px var(--primary-light);
 }
-
 .search-filter select {
-    padding: 0.8rem 1.2rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    background-color: white;
-    cursor: pointer;
+    min-width: 180px;
 }
-
-/* Courses Grid */
 .courses-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 2.5rem;
+    margin-top: 2.5rem;
 }
-
 .course-card {
-    background: white;
-    border-radius: 8px;
+    background: var(--card-background);
+    color: var(--text);
+    border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18), 0 2px 8px 0 rgba(0,0,0,0.18);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    position: relative;
+    backdrop-filter: blur(6px) saturate(1.1);
+    -webkit-backdrop-filter: blur(6px) saturate(1.1);
 }
-
 .course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-8px) scale(1.025);
+    box-shadow: 0 16px 48px 0 rgba(37,99,235,0.28), 0 4px 16px 0 rgba(0,0,0,0.22);
 }
-
 .course-thumbnail {
     height: 180px;
     overflow: hidden;
+    background: #e0e7ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
 .course-thumbnail img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    transition: transform 0.5s var(--transition);
 }
-
 .course-card:hover .course-thumbnail img {
-    transform: scale(1.05);
+    transform: scale(1.07);
 }
-
 .course-info {
-    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
 }
-
-.course-info h3 {
-    font-size: 1.3rem;
+.course-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
-    color: #2c3e50;
+    font-size: 1.02rem;
 }
-
-.instructor {
-    color: #7f8c8d;
-    font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-}
-
-.price {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #2c3e50;
-    margin: 1rem 0;
-}
-
-/* Button Styles */
-.btn {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-    background-color: #3498db;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
+.course-category {
+    background: #e0f2fe;
+    color: var(--primary);
+    border-radius: 9999px;
+    padding: 0.2rem 0.9rem;
     font-weight: 600;
-    transition: all 0.3s ease;
+    font-size: 0.98rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.course-rating {
+    color: #fbbf24;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 1.08rem;
+}
+.course-reviews {
+    color: var(--text-light);
+    font-size: 0.98rem;
+    margin-left: 0.2rem;
+}
+.course-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    margin: 0.5rem 0 0.2rem 0;
+    letter-spacing: 0.2px;
+}
+.course-instructor {
+    color: var(--secondary);
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.course-description {
+    color: var(--text);
+    font-size: 1.01rem;
+    margin-bottom: 1.1rem;
+    opacity: 0.92;
+    min-height: 2.2em;
+}
+.course-meta-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    gap: 1rem;
+}
+.course-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #22c55e;
+    border-radius: 8px;
+    padding: 0.3rem 0.9rem;
+    letter-spacing: 0.5px;
+    background: none;
+}
+.view-course-btn {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0.7rem 1.5rem;
+    box-shadow: 0 2px 8px 0 rgba(37,99,235,0.08);
+    transition: background 0.2s, transform 0.2s;
     border: none;
-    cursor: pointer;
-    text-align: center;
+    outline: none;
 }
-
-.btn-primary {
-    background-color: #3498db;
+.view-course-btn:hover {
+    background: var(--secondary);
+    transform: translateY(-2px) scale(1.04);
 }
-
-.btn-primary:hover {
-    background-color: #2980b9;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    .courses-header h1 {
-        font-size: 2rem;
-    }
-    
-    .search-filter {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .search-filter input,
-    .search-filter select {
-        width: 100%;
-    }
-    
+@media (max-width: 900px) {
     .courses-grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .course-card {
+        min-height: 370px;
     }
 }
-
-@media (max-width: 480px) {
+@media (max-width: 600px) {
     .courses-header h1 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
-    
-    .course-thumbnail {
-        height: 150px;
+    .courses-grid {
+        grid-template-columns: 1fr;
     }
-    
+    .course-card {
+        min-height: 320px;
+    }
     .course-info {
-        padding: 1rem;
-    }
-    
-    .course-info h3 {
-        font-size: 1.1rem;
-    }
-    
-    .price {
-        font-size: 1.1rem;
-    }
-    
-    .btn {
-        width: 100%;
+        padding: 1rem 0.7rem 0.7rem 0.7rem;
     }
 }
-
-/* Empty State */
 .courses-grid:empty::before {
     content: "No courses found matching your criteria";
     display: block;
     text-align: center;
     grid-column: 1 / -1;
     padding: 2rem;
-    color: #7f8c8d;
+    color: var(--text-light);
     font-size: 1.2rem;
 }

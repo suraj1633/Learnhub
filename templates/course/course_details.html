@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="course-details" style="max-width: 1280px; margin: 0 auto; padding: var(--spacing-6);">
+    <!-- Course Header -->
+    <div class="card" style="margin-bottom: var(--spacing-8); overflow: hidden;">
+        <div style="position: relative; height: 300px;">
+            <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}"
+                 alt="{{ course.title }}"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+            {% if course.is_enrolled %}
+            <div class="badge-success" style="position: absolute; top: var(--spacing-4); right: var(--spacing-4); padding: var(--spacing-2) var(--spacing-4); border-radius: var(--border-radius);">
+                <i class="fas fa-check-circle"></i> Enrolled
+            </div>
+            {% endif %}
+        </div>
+        <div style="padding: var(--spacing-8);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--spacing-6);">
+                <div>
+                    <h1 style="font-size: var(--font-size-3xl); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">
+                        {{ course.title }}
+                    </h1>
+                    <p style="color: var(--neutral); font-size: var(--font-size-lg); margin-bottom: var(--spacing-4);">
+                        {{ course.description }}
+                    </p>
+                    <div style="display: flex; gap: var(--spacing-6); color: var(--neutral);">
+                        <span><i class="fas fa-users"></i> {{ course.enrolled_students }} students</span>
+                        <span><i class="fas fa-clock"></i> {{ course.duration }}</span>
+                        <span><i class="fas fa-signal"></i> {{ course.level }}</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: var(--font-size-3xl); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">
+                        ${{ course.price }}
+                    </div>
+                    {% if not course.is_enrolled %}
+                    <button class="btn btn-primary" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);"
+                            onclick="enrollCourse('{{ course.id }}')">
+                        <i class="fas fa-shopping-cart"></i> Enroll Now
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('view_course_content', course_id=course.id) }}" class="btn btn-success" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);">
+                        <i class="fas fa-play-circle"></i> Continue Learning
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Content -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-8);">
+        <div>
+            <!-- Course Overview -->
+            <div class="card" style="padding: var(--spacing-6); margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Course Overview
+                </h2>
+                <div style="color: var(--neutral); line-height: 1.6;">
+                    {{ course.overview|safe }}
+                </div>
+            </div>
+
+            <!-- Course Curriculum -->
+            <div class="card" style="padding: var(--spacing-6);">
+                <h2 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Course Curriculum
+                </h2>
+                <div class="curriculum-list">
+                    {% for section in course.sections %}
+                    <div class="section" style="margin-bottom: var(--spacing-6);">
+                        <h3 style="font-size: var(--font-size-lg); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">
+                            {{ section.title }}
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: var(--spacing-2);">
+                            {% for lesson in section.lessons %}
+                            <div class="card" style="padding: var(--spacing-4); display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: var(--spacing-4);">
+                                    <i class="fas fa-play-circle" style="color: var(--primary); font-size: var(--font-size-xl);"></i>
+                                    <span style="color: var(--neutral-dark);">{{ lesson.title }}</span>
+                                </div>
+                                <span style="color: var(--neutral); font-size: var(--font-size-sm);">{{ lesson.duration }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructor Info -->
+        <div>
+            <div class="card" style="padding: var(--spacing-6); margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    About the Instructor
+                </h2>
+                <div style="text-align: center; margin-bottom: var(--spacing-6);">
+                    <img src="{{ url_for('static', filename=course.instructor.profile_pic) if course.instructor.profile_pic else url_for('static', filename='images/default-profile.jpg') }}"
+                         alt="{{ course.instructor.username }}"
+                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: var(--spacing-4);">
+                    <h3 style="font-size: var(--font-size-lg); color: var(--neutral-dark);">
+                        {{ course.instructor.first_name }} {{ course.instructor.last_name }}
+                    </h3>
+                    <p style="color: var(--neutral); font-size: var(--font-size-sm);">
+                        {{ course.instructor.title }}
+                    </p>
+                </div>
+                <div style="color: var(--neutral); line-height: 1.6;">
+                    {{ course.instructor.bio }}
+                </div>
+            </div>
+
+            <!-- Course Features -->
+            <div class="card" style="padding: var(--spacing-6);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Course Features
+                </h2>
+                <div style="display: flex; flex-direction: column; gap: var(--spacing-4);">
+                    <div style="display: flex; align-items: center; gap: var(--spacing-4); color: var(--neutral);">
+                        <i class="fas fa-video"></i>
+                        <span>{{ course.total_videos }} video lectures</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--spacing-4); color: var(--neutral);">
+                        <i class="fas fa-file-alt"></i>
+                        <span>{{ course.total_resources }} downloadable resources</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--spacing-4); color: var(--neutral);">
+                        <i class="fas fa-infinity"></i>
+                        <span>Full lifetime access</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--spacing-4); color: var(--neutral);">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Access on mobile and TV</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--spacing-4); color: var(--neutral);">
+                        <i class="fas fa-certificate"></i>
+                        <span>Certificate of completion</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Confirmation Modal -->
+<div id="enrollModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div class="modal-content card" style="position: relative; width: 90%; max-width: 500px; margin: 10% auto; padding: var(--spacing-6);">
+        <h3 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">
+            Enroll in Course
+        </h3>
+        <p style="color: var(--neutral); margin-bottom: var(--spacing-6);">
+            Are you sure you want to enroll in this course? You will be charged ${{ course.price }}.
+        </p>
+        <div style="display: flex; gap: var(--spacing-4); justify-content: flex-end;">
+            <button class="btn btn-neutral" onclick="closeModal()">
+                Cancel
+            </button>
+            <button class="btn btn-primary" onclick="processEnrollment()">
+                Confirm Enrollment
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function enrollCourse(courseId) {
+    document.getElementById('enrollModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('enrollModal').style.display = 'none';
+}
+
+function processEnrollment() {
+    // Show loading state
+    const enrollBtn = document.querySelector('.btn-primary');
+    LearnHub.showLoading(enrollBtn);
+    
+    // Process enrollment
+    fetch('/api/enroll', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            course_id: '{{ course.id }}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to enroll. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    })
+    .finally(() => {
+        LearnHub.hideLoading(enrollBtn);
+        closeModal();
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('enrollModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,268 @@
+{% extends "main/base.html" %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+.teacher-profile-hero {
+    background: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 100%);
+    color: var(--neutral-dark);
+    padding: 3rem 0 2rem 0;
+    text-align: center;
+}
+.teacher-profile-hero img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 4px solid var(--primary);
+    background: #fff;
+}
+.teacher-profile-hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.teacher-profile-hero .teacher-username {
+    color: var(--primary-light);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+.teacher-profile-hero .teacher-bio {
+    color: var(--neutral);
+    font-size: 1.08rem;
+    margin: 1rem auto 0 auto;
+    max-width: 600px;
+}
+.teacher-profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2rem 0 2.5rem 0;
+}
+.teacher-profile-stat {
+    background: var(--card-background);
+    color: var(--neutral-dark);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18), 0 2px 8px 0 rgba(0,0,0,0.18);
+    padding: 1.2rem 4.5rem;
+    min-width: 240px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.teacher-profile-stat:hover {
+    box-shadow: 0 16px 48px 0 rgba(37,99,235,0.28), 0 4px 16px 0 rgba(0,0,0,0.22);
+    transform: translateY(-2px) scale(1.03);
+}
+.teacher-profile-stat .stat-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.2rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.teacher-profile-stat:hover .stat-icon {
+    transform: scale(1.18);
+    box-shadow: 0 4px 16px 0 rgba(37,99,235,0.18), 0 2px 8px 0 rgba(0,0,0,0.18);
+}
+.teacher-profile-stat.courses .stat-icon { color: var(--primary); }
+.teacher-profile-stat.students .stat-icon { color: var(--success); }
+.teacher-profile-stat.reviews .stat-icon { color: var(--warning); }
+.teacher-profile-stat.rating .stat-icon { color: var(--primary-light); }
+.teacher-profile-stat .stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+.teacher-profile-stat.students .stat-value { color: var(--success); }
+.teacher-profile-stat.reviews .stat-value { color: var(--warning); }
+.teacher-profile-stat.rating .stat-value { color: var(--primary-light); }
+.teacher-profile-stat .stat-label {
+    font-size: 0.95rem;
+    color: var(--neutral);
+    margin-top: 0.2rem;
+}
+.teacher-courses-section {
+    max-width: 1100px;
+    margin: 1.5rem auto 3rem auto;
+    padding: 0 1rem;
+}
+.teacher-courses-section h2 {
+    font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: var(--light-text, #f3f4f6);
+    margin-bottom: 2.5rem;
+    text-align: left;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    display: inline-block;
+    padding-bottom: 0.3rem;
+}
+.teacher-courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
+    max-width: 100%;
+    gap: 2rem;
+}
+.teacher-course-card {
+    background: var(--card-background);
+    color: var(--neutral-dark);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18), 0 2px 8px 0 rgba(0,0,0,0.18);
+    padding: 0 0 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 260px;
+    min-width: 340px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 0.5rem;
+    gap: 0.7rem;
+    overflow: hidden;
+}
+.teacher-course-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 16px 48px 0 rgba(37,99,235,0.28), 0 4px 16px 0 rgba(0,0,0,0.22);
+}
+.teacher-course-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    margin-bottom: 0.5rem;
+}
+.teacher-course-meta {
+    display: flex;
+    gap: 1.2rem;
+    font-size: 0.98rem;
+    color: var(--neutral);
+    margin-bottom: 0.7rem;
+}
+.teacher-course-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.teacher-course-description {
+    color: var(--neutral);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+.teacher-course-link {
+    margin-top: auto;
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 0.6rem 1.3rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.teacher-course-link:hover {
+    background: var(--primary-dark);
+    color: #fff;
+}
+.teacher-course-thumbnail {
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    background: #e0e7ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+}
+.teacher-course-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+    transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+.teacher-course-card:hover .teacher-course-thumbnail img {
+    transform: scale(1.07);
+}
+.teacher-course-card-inner {
+    padding: 0 1.3rem;
+}
+@media (max-width: 700px) {
+    .teacher-profile-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .teacher-courses-grid {
+        grid-template-columns: 1fr;
+    }
+    .teacher-course-card {
+        min-width: 0;
+    }
+}
+@media (min-width: 1000px) {
+    .teacher-courses-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block title %}{{ teacher.first_name }} {{ teacher.last_name }} - Teacher Profile{% endblock %}
+
+{% block content %}
+<section class="teacher-profile-hero">
+    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ teacher.username }} profile picture">
+    <h1>{{ teacher.first_name }} {{ teacher.last_name }}</h1>
+    <div class="teacher-username">@{{ teacher.username }}</div>
+    <div class="teacher-bio">{{ teacher.bio }}</div>
+</section>
+<div class="teacher-profile-stats">
+    <div class="teacher-profile-stat courses">
+        <span class="stat-icon"><i class="fas fa-book"></i></span>
+        <div class="stat-value">{{ courses|length }}</div>
+        <div class="stat-label">Courses</div>
+    </div>
+    <div class="teacher-profile-stat students">
+        <span class="stat-icon"><i class="fas fa-users"></i></span>
+        <div class="stat-value">{{ total_students }}</div>
+        <div class="stat-label">Students</div>
+    </div>
+    <div class="teacher-profile-stat reviews">
+        <span class="stat-icon"><i class="fas fa-star"></i></span>
+        <div class="stat-value">{{ total_reviews }}</div>
+        <div class="stat-label">Reviews</div>
+    </div>
+    <div class="teacher-profile-stat rating">
+        <span class="stat-icon"><i class="fas fa-star-half-alt"></i></span>
+        <div class="stat-value">{{ avg_rating }}</div>
+        <div class="stat-label">Avg. Rating</div>
+    </div>
+</div>
+<section class="teacher-courses-section">
+    <h2>Courses by {{ teacher.first_name }} {{ teacher.last_name }}</h2>
+    <div class="teacher-courses-grid">
+        {% for course in courses %}
+        <div class="teacher-course-card">
+            <div class="teacher-course-thumbnail">
+                <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
+            </div>
+            <div class="teacher-course-card-inner" style="padding: 0 1.3rem;">
+                <div class="teacher-course-title">{{ course.title }}</div>
+                <div class="teacher-course-meta">
+                    <span><i class="fas fa-users"></i> {{ course.enrollments|length }}</span>
+                    <span><i class="fas fa-star"></i> {{ '%.1f'|format(course.reviews|map(attribute='rating')|list|avg|default(0, true)) }}</span>
+                    <span><i class="fas fa-tag"></i> {{ course.category }}</span>
+                </div>
+                <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="teacher-course-link">View Course</a>
+            </div>
+        </div>
+        {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--neutral); padding: 2rem;">No courses published yet.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %} 

@@ -1,82 +1,368 @@
 {% extends "dashboard/student/base.html" %}
 
+{% block title %}Student Dashboard{% endblock %}
+
 {% block head %}
 {{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_home.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
+<div class="dashboard-container" style="margin-top: -1.5rem;">
     <!-- Welcome Header -->
-    <div class="welcome-header">
-        <h1>Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
+    <div class="welcome-header" style="margin-bottom: var(--spacing-8);">
+        <h1 style="font-size: var(--font-size-4xl); color: var(--neutral-dark); margin-bottom: var(--spacing-2);">Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
+        <p class="subtitle" style="color: var(--neutral); font-size: var(--font-size-lg);">Track your learning progress</p>
     </div>
 
     <!-- Stats Cards -->
     <div class="stats-container">
-        <div class="stats-card enrolled">
+        <div class="stats-card courses">
             <div class="stats-content">
                 <h3>Enrolled Courses</h3>
-                <p class="count">{{ enrolled_courses|length }}</p>
+                <p class="count" style="color: var(--primary);">{{ enrollments|length }}</p>
+                <p class="trend">Active Courses</p>
             </div>
             <i class="fas fa-book-open stats-icon"></i>
         </div>
         
         <div class="stats-card completed">
             <div class="stats-content">
-                <h3>Completed Courses</h3>
-                <p class="count">{{ completed_courses }}</p>
+                <h3>Completed</h3>
+                <p class="count" style="color: var(--success);">{{ completed_courses }}</p>
+                <p class="trend">Finished Courses</p>
             </div>
             <i class="fas fa-check-circle stats-icon"></i>
         </div>
+
+        <div class="stats-card in-progress">
+            <div class="stats-content">
+                <h3>In Progress</h3>
+                <p class="count" style="color: var(--warning);">{{ enrollments|length - completed_courses }}</p>
+                <p class="trend">Ongoing Courses</p>
+            </div>
+            <i class="fas fa-clock stats-icon"></i>
+        </div>
     </div>
 
-    <!-- Recent Courses -->
-    <div class="recent-courses">
-        <h2>Your Recent Courses</h2>
-        
-        {% if enrolled_courses|length == 0 %}
-            <div class="no-courses">
-                <p>You have no courses enrolled. Please enroll in a course to get started!</p>
-                <a href="{{ url_for('courses') }}" class="btn browse-btn">Browse Courses</a>
-            </div>
-        {% else %}
-            <div class="courses-grid">
-                {% for enrollment in enrolled_courses[:3] %}
-                <div class="course-card">
-                    <div class="course-thumbnail">
-                        <img src="{{ url_for('static', filename=enrollment.course.thumbnail_url) if enrollment.course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" 
-                             alt="{{ enrollment.course.title }}">
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: {{ enrollment.progress if enrollment.progress is not none else 0 }}%"></div>
+    <!-- Course Cards -->
+    <div class="courses-container">
+        {% for enrollment in enrollments %}
+            <div class="course-card">
+                <div class="course-image">
+                    <a href="{{ url_for('view_course', course_id=enrollment[1].course_id) }}">
+                        <img src="{{ url_for('static', filename=enrollment[1].thumbnail_url) if enrollment[1].thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" 
+                             alt="{{ enrollment[1].title|title }}">
+                    </a>
+                    {% if enrollment[0].completed %}
+                        <div class="course-badge completed">
+                            <i class="fas fa-check-circle"></i> Completed
                         </div>
-                        <span class="progress-text">{{ enrollment.progress }}% Complete</span>
-                    </div>
-                    <div class="course-details">
-                        <h3>{{ enrollment.course.title }}</h3>
-                        <div class="course-actions">
-                            {% if enrollment.completed %}
-                                <button class="btn completed-btn">
-                                    <i class="fas fa-check"></i> Completed
-                                </button>
-                            {% else %}
-                                <a href="{{ url_for('view_course', course_id=enrollment.course.course_id) }}" class="btn continue-btn">
-                                    <i class="fas fa-play"></i> Continue
-                                </a>
+                    {% endif %}
+                </div>
+                <div class="course-info">
+                    <h3>{{ enrollment[1].title|title }}</h3>
+                    <p class="instructor">By {{ enrollment[2].first_name or enrollment[2].username }}</p>
+                    <div class="course-ratings">
+                        <div class="stars">
+                            {% set reviews = course_reviews[enrollment[1].course_id] %}
+                            {% set rating = 0 %}
+                            {% if reviews %}
+                                {% set total = namespace(value=0) %}
+                                {% for review in reviews %}
+                                    {% set total.value = total.value + review.rating %}
+                                {% endfor %}
+                                {% set rating = total.value / reviews|length %}
                             {% endif %}
+                            {% for i in range(5) %}
+                                {% if rating >= i + 1 %}
+                                    <i class="fas fa-star"></i>
+                                {% elif rating > i %}
+                                    <i class="fas fa-star-half-alt"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
                         </div>
+                        <span class="rating-value">{{ "%.1f"|format(rating) }}</span>
+                        <span class="rating-count">({{ reviews|length }} reviews)</span>
+                    </div>
+                    <div class="course-stats">
+                        <span><i class="fas fa-book-open"></i> {{ enrollment[0].progress }}% Complete</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {{ enrollment[0].progress }}%"></div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-            
-            {% if enrolled_courses|length > 3 %}
-            <div class="view-all">
-                <a href="{{ url_for('student_courses') }}" class="btn view-all-btn">View All Courses</a>
+        {% else %}
+            <div class="no-courses">
+                <i class="fas fa-book-open"></i>
+                <h3>No Courses Yet</h3>
+                <p>Explore our courses and start learning today!</p>
+                <a href="{{ url_for('courses') }}" class="btn btn-primary">Browse Courses</a>
             </div>
-            {% endif %}
-        {% endif %}
+        {% endfor %}
     </div>
 </div>
+
+<style>
+.dashboard-container {
+    padding: var(--spacing-6);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+
+.stats-card {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-content h3 {
+    color: var(--neutral);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-2);
+}
+
+.stats-content .count {
+    font-size: var(--font-size-3xl);
+    font-weight: 600;
+    margin-bottom: var(--spacing-1);
+}
+
+.stats-content .trend {
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.courses .stats-icon {
+    color: var(--primary);
+}
+
+.completed .stats-icon {
+    color: var(--success);
+}
+
+.in-progress .stats-icon {
+    color: var(--warning);
+}
+
+.courses-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.course-card {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.course-image {
+    height: 160px;
+    overflow: hidden;
+    position: relative;
+}
+
+.course-image a {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover .course-image img {
+    transform: scale(1.05);
+}
+
+.course-badge {
+    position: absolute;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.course-badge.completed {
+    background-color: var(--success);
+    color: white;
+}
+
+.course-info {
+    padding: var(--spacing-4);
+}
+
+.course-info h3 {
+    font-size: var(--font-size-lg);
+    color: var(--neutral-dark);
+    margin-bottom: var(--spacing-2);
+}
+
+.instructor {
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-3);
+}
+
+.course-ratings {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-3);
+}
+
+.stars {
+    display: flex;
+    gap: 2px;
+}
+
+.stars i {
+    color: var(--warning);
+    font-size: var(--font-size-sm);
+}
+
+.rating-value {
+    color: var(--neutral-dark);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.rating-count {
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+}
+
+.course-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-3);
+}
+
+.course-stats i {
+    color: var(--primary);
+}
+
+.progress-bar-container {
+    height: 6px;
+    background-color: var(--neutral-100);
+    border-radius: var(--border-radius-full);
+    overflow: hidden;
+    margin-bottom: var(--spacing-4);
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary);
+    border-radius: var(--border-radius-full);
+    transition: width 0.3s ease;
+}
+
+.course-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.no-courses {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--spacing-8);
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.no-courses i {
+    font-size: var(--font-size-4xl);
+    color: var(--neutral-300);
+    margin-bottom: var(--spacing-4);
+}
+
+.no-courses h3 {
+    font-size: var(--font-size-xl);
+    color: var(--neutral-dark);
+    margin-bottom: var(--spacing-2);
+}
+
+.no-courses p {
+    color: var(--neutral);
+    margin-bottom: var(--spacing-4);
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: var(--spacing-4);
+    }
+
+    .stats-container,
+    .courses-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock %}

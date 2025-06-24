@@ -30,9 +30,9 @@
                 <label>Account Type</label>
                 <div class="role-select">
                     <input type="radio" id="student" name="user_type" value="student" checked>
-                    <label for="student">Student</label>
+                    <label for="student" style="color: var(--neutral-dark);">Student</label>
                     <input type="radio" id="teacher" name="user_type" value="teacher">
-                    <label for="teacher">Teacher</label>
+                    <label for="teacher" style="color: var(--neutral-dark);">Teacher</label>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Register</button>
@@ -41,3 +41,5 @@
     </div>
 </div>
 {% endblock %}
+
+{% block footer %}{% endblock %}

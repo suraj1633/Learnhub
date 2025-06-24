@@ -1,0 +1,123 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Edit Course - {{ course.title }}{% endblock %}
+
+{% block header_title %}Edit Course{% endblock %}
+{% block header_subtitle %}Update your course information{% endblock %}
+
+{% block content %}
+<div class="edit-course-container">
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: var(--spacing-6);">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Course Title -->
+            <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                <label for="title" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Course Title</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       value="{{ course.title }}"
+                       required 
+                       class="form-input"
+                       style="width: 100%;">
+            </div>
+
+            <!-- Course Description -->
+            <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                <label for="description" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Description</label>
+                <textarea id="description" 
+                          name="description" 
+                          required 
+                          class="form-input"
+                          style="width: 100%; min-height: 150px; resize: vertical;">{{ course.description }}</textarea>
+            </div>
+
+            <!-- Course Price -->
+            <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                <label for="price" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Price ($)</label>
+                <input type="number" 
+                       id="price" 
+                       name="price" 
+                       value="{{ course.price }}"
+                       required 
+                       step="0.01" 
+                       min="0"
+                       class="form-input"
+                       style="width: 100%;">
+            </div>
+
+            <!-- Course Category -->
+            <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                <label for="category" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Category</label>
+                <select id="category" 
+                        name="category" 
+                        required 
+                        class="form-input"
+                        style="width: 100%;">
+                    <option value="">Select a category</option>
+                    <option value="programming" {% if course.category == 'programming' %}selected{% endif %}>Programming</option>
+                    <option value="design" {% if course.category == 'design' %}selected{% endif %}>Design</option>
+                    <option value="business" {% if course.category == 'business' %}selected{% endif %}>Business</option>
+                    <option value="marketing" {% if course.category == 'marketing' %}selected{% endif %}>Marketing</option>
+                    <option value="music" {% if course.category == 'music' %}selected{% endif %}>Music</option>
+                    <option value="photography" {% if course.category == 'photography' %}selected{% endif %}>Photography</option>
+                    <option value="other" {% if course.category == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+            <!-- Course Status -->
+            <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                <label for="status" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Course Status</label>
+                <select id="status" 
+                        name="status" 
+                        required 
+                        class="form-input"
+                        style="width: 100%;">
+                    <option value="draft" {% if not course.is_published %}selected{% endif %}>Draft</option>
+                    <option value="published" {% if course.is_published %}selected{% endif %}>Published</option>
+                </select>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm); margin-top: var(--spacing-2);">
+                    {% if course.is_published %}
+                        This course is currently visible to students
+                    {% else %}
+                        This course is currently hidden from students
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Course Thumbnail -->
+            <div class="form-group" style="margin-bottom: var(--spacing-6);">
+                <label style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Course Thumbnail</label>
+                {% if course.thumbnail_url %}
+                <div style="margin-bottom: var(--spacing-4);">
+                    <img src="{{ url_for('static', filename=course.thumbnail_url) }}" 
+                         alt="Current thumbnail" 
+                         style="max-width: 200px; border-radius: var(--border-radius); margin-bottom: var(--spacing-2);">
+                    <p style="color: var(--neutral); font-size: var(--font-size-sm);">Current thumbnail</p>
+                </div>
+                {% endif %}
+                <input type="file" 
+                       id="thumbnail" 
+                       name="thumbnail" 
+                       accept="image/*"
+                       class="form-input"
+                       style="width: 100%;">
+                <p style="color: var(--neutral); font-size: var(--font-size-sm); margin-top: var(--spacing-2);">
+                    Leave empty to keep current thumbnail
+                </p>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display: flex; gap: var(--spacing-4); justify-content: flex-end;">
+                <a href="{{ url_for('manage_courses') }}" class="btn btn-neutral">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -4,71 +4,295 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LearnHub - {% block title %}{% endblock %}</title>
-    {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base_courses.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/details.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css') }}">
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <!-- Main Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    {% endblock %}  
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main-navbar.css') }}">
+    
+    {% block head %}{% endblock %}
 </head>
-<body>
-    <header class="main-header">
-        <div class="container">
-            <a href="{{ url_for('home') }}" class="logo">LearnHub</a>
-            <nav class="main-nav">
-                <ul>
-                    <li><a href="{{ url_for('home') }}">Home</a></li>
-                    <li><a href="{{ url_for('courses') }}">Courses</a></li>
-                    <li><a href="{{ url_for('teachers') }}">Teachers</a></li>
-                    <li><a href="{{ url_for('testimonials') }}">Testimonials</a></li>
-                    <li><a href="{{ url_for('about') }}">About</a></li>
-                    <li><a href="{{ url_for('contact') }}">Contact</a></li>
-                </ul>
-            </nav>
-            <div class="auth-buttons">
+<body style="background-color: var(--background);">
+    <!-- Main Navigation Bar -->
+    <nav class="main-nav-bar min-height:10vh;">
+        <div class="main-nav-container">
+            <div class="main-nav-left">
+                
+                <!-- Mobile Menu Toggle Button -->
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <a href="{{ url_for('home') }}" class="main-nav-logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>LearnHub</span>
+                </a>
+                
+                <div class="main-nav-links">
+                    <a href="{{ url_for('home') }}" class="main-nav-link {{ 'active' if request.endpoint == 'home' }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="main-nav-link {{ 'active' if request.endpoint == 'courses' }}">
+                        <i class="fas fa-book"></i> Courses
+                    </a>
+                    <a href="{{ url_for('teachers') }}" class="main-nav-link {{ 'active' if request.endpoint == 'teachers' }}">
+                        <i class="fas fa-chalkboard-teacher"></i> Teachers
+                    </a>
+                    <a href="{{ url_for('about') }}" class="main-nav-link {{ 'active' if request.endpoint == 'about' }}">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                    <a href="{{ url_for('contact') }}" class="main-nav-link {{ 'active' if request.endpoint == 'contact' }}">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
+                </div>
+            </div>
+            <div class="main-nav-right">
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                    <a href="{{ url_for('student_dashboard' if current_user.user_type == 'student' else 'teacher_dashboard') }}" 
-                       class="btn btn-primary">
-                        My Dashboard
-                    </a>
+                <div class="main-profile-dropdown">
+                    <div class="main-profile-image-wrapper">
+                        {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename=current_user.profile_pic) }}" 
+                             alt="{{ current_user.username|title }}" 
+                             class="main-profile-image">
+                        {% else %}
+                        <div class="main-profile-image-fallback">
+                            {{ current_user.first_name[0] | upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="main-profile-info">
+                        <span class="main-username">{{ current_user.username|title }}</span>
+                        <i class="fas fa-chevron-down main-chevron-icon"></i>
+                    </div>
+                    <div class="main-dropdown-content">
+                        {% if current_user.user_type == 'teacher' %}
+                        <a href="{{ url_for('teacher_dashboard') }}" class="{{ 'active' if request.endpoint == 'teacher_dashboard' }}">
+                            <i class="fas fa-columns"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('manage_courses') }}" class="{{ 'active' if request.endpoint == 'manage_courses' }}">
+                            <i class="fas fa-book-open"></i>
+                            <span>My Courses</span>
+                        </a>
+                        <a href="{{ url_for('create_course') }}" class="{{ 'active' if request.endpoint == 'create_course' }}">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create Course</span>
+                        </a>
+                        <a href="{{ url_for('teacher_earnings') }}" class="{{ 'active' if request.endpoint == 'teacher_earnings' }}">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>Earnings</span>
+                        </a>
+                        <div class="main-dropdown-divider"></div>
+                        <a href="{{ url_for('teacher_profile') }}" class="{{ 'active' if request.endpoint == 'teacher_profile' }}">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
+                            <i class="fas fa-columns"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('student_courses') }}" class="{{ 'active' if request.endpoint == 'student_courses' }}">
+                            <i class="fas fa-book-open"></i>
+                            <span>My Learning</span>
+                        </a>
+                        <div class="main-dropdown-divider"></div>
+                        <a href="{{ url_for('student_profile') }}" class="{{ 'active' if request.endpoint == 'student_profile' }}">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" style="color: var(--danger);">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-outline">
+                <div class="main-nav-links">
+                    <a href="{{ url_for('login') }}" class="main-nav-link {{ 'active' if request.endpoint == 'login' }}">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </a>
-                    <a href="{{ url_for('register') }}" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Sign Up
+                    <a href="{{ url_for('register') }}" class="main-nav-link register">
+                        <i class="fas fa-user-plus"></i> Register
                     </a>
+                </div>
                 {% endif %}
             </div>
         </div>
-    </header>
-
-    <main class="main-content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
         
-        {% block content %}{% endblock %}
-    </main>
+        <!-- Nav Overlay -->
+        <div class="nav-overlay"></div>
+    </nav>
 
-    <footer class="main-footer">
-        <div class="container">
-            <p>&copy; 2023 LearnHub. All rights reserved.</p>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                    <button class="close-alert">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    {% block footer %}
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>LearnHub</h3>
+                <p>Your journey to knowledge starts here. Join our community of learners and educators.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('courses') }}">Courses</a>
+                <a href="{{ url_for('teachers') }}">Teachers</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>Email: info@learnhub.com</p>
+                <p>Phone: +1 (234) 567-8900</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; {{ current_year or 2024 }} LearnHub. All rights reserved.
         </div>
     </footer>
+    {% endblock %}
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- JavaScript -->
+    <script>
+        // Close flash messages
+        document.querySelectorAll('.close-alert').forEach(button => {
+            button.addEventListener('click', () => {
+                const alert = button.parentElement;
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        });
+
+        // Mobile menu toggle functionality
+        document.querySelector('.mobile-menu-toggle').addEventListener('click', function() {
+            document.querySelector('.main-nav-links').classList.toggle('active');
+            document.querySelector('.nav-overlay').classList.toggle('active');
+            document.body.classList.toggle('no-scroll');
+        });
+
+        document.querySelector('.nav-overlay').addEventListener('click', function() {
+            document.querySelector('.main-nav-links').classList.remove('active');
+            this.classList.remove('active');
+            document.body.classList.remove('no-scroll');
+        });
+
+        // Profile dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdown = document.querySelector('.main-profile-dropdown');
+            if (dropdown) {
+                const dropdownContent = dropdown.querySelector('.main-dropdown-content');
+                let timeoutId;
+
+                // Handle mouse enter on dropdown trigger
+                dropdown.addEventListener('mouseenter', function() {
+                    clearTimeout(timeoutId);
+                    dropdownContent.style.visibility = 'visible';
+                    dropdownContent.style.opacity = '1';
+                    dropdownContent.style.transitionDelay = '0s';
+                    dropdownContent.style.pointerEvents = 'auto';
+                    dropdownContent.style.transform = 'translateY(0)';
+                });
+
+                // Handle mouse leave on dropdown trigger
+                dropdown.addEventListener('mouseleave', function(e) {
+                    if (!e.relatedTarget || !dropdownContent.contains(e.relatedTarget)) {
+                        timeoutId = setTimeout(() => {
+                            if (!dropdownContent.matches(':hover')) {
+                                dropdownContent.style.visibility = 'hidden';
+                                dropdownContent.style.opacity = '0';
+                                dropdownContent.style.pointerEvents = 'none';
+                                dropdownContent.style.transform = 'translateY(-10px)';
+                            }
+                        }, 500);
+                    }
+                });
+
+                // Handle mouse enter on dropdown content
+                dropdownContent.addEventListener('mouseenter', function() {
+                    clearTimeout(timeoutId);
+                });
+
+                // Handle mouse leave on dropdown content
+                dropdownContent.addEventListener('mouseleave', function() {
+                    timeoutId = setTimeout(() => {
+                        dropdownContent.style.visibility = 'hidden';
+                        dropdownContent.style.opacity = '0';
+                        dropdownContent.style.pointerEvents = 'none';
+                        dropdownContent.style.transform = 'translateY(-10px)';
+                    }, 500);
+                });
+
+                // Handle keyboard navigation
+                dropdown.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (dropdownContent.style.visibility === 'hidden') {
+                            dropdownContent.style.visibility = 'visible';
+                            dropdownContent.style.opacity = '1';
+                            dropdownContent.style.pointerEvents = 'auto';
+                            dropdownContent.style.transform = 'translateY(0)';
+                            dropdownContent.querySelector('a').focus();
+                        } else {
+                            dropdownContent.style.visibility = 'hidden';
+                            dropdownContent.style.opacity = '0';
+                            dropdownContent.style.pointerEvents = 'none';
+                            dropdownContent.style.transform = 'translateY(-10px)';
+                        }
+                    }
+                });
+
+                // Allow keyboard navigation within dropdown
+                dropdownContent.addEventListener('keydown', function(e) {
+                    const items = Array.from(dropdownContent.querySelectorAll('a'));
+                    const currentIndex = items.indexOf(document.activeElement);
+
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            if (currentIndex < items.length - 1) {
+                                items[currentIndex + 1].focus();
+                            }
+                            break;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            if (currentIndex > 0) {
+                                items[currentIndex - 1].focus();
+                            }
+                            break;
+                        case 'Escape':
+                            e.preventDefault();
+                            dropdownContent.style.visibility = 'hidden';
+                            dropdownContent.style.opacity = '0';
+                            dropdownContent.style.pointerEvents = 'none';
+                            dropdownContent.style.transform = 'translateY(-10px)';
+                            dropdown.focus();
+                            break;
+                    }
+                });
+            }
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

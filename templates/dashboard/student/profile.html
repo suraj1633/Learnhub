@@ -1,0 +1,162 @@
+{% extends "dashboard/student/base.html" %}
+
+{% block title %}Student Profile{% endblock %}
+
+{% block header_title %}My Profile{% endblock %}
+{% block header_subtitle %}Manage your personal information and account settings{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Stats Overview -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-6); margin-bottom: var(--spacing-8);">
+        <!-- Total Courses -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Enrolled Courses</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--primary);">{{ stats.total_courses }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Active courses</p>
+            </div>
+            <i class="fas fa-book" style="font-size: 2.5rem; color: var(--primary); opacity: 0.9;"></i>
+        </div>
+
+        <!-- Completed Courses -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Completed Courses</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--success);">{{ stats.completed_courses }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Finished courses</p>
+            </div>
+            <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--success); opacity: 0.9;"></i>
+        </div>
+
+        <!-- In Progress Courses -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">In Progress</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--warning);">{{ stats.in_progress_courses }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Ongoing courses</p>
+            </div>
+            <i class="fas fa-clock" style="font-size: 2.5rem; color: var(--warning); opacity: 0.9;"></i>
+        </div>
+
+        <!-- Average Progress -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Average Progress</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--primary);">{{ stats.avg_progress }}%</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Course completion</p>
+            </div>
+            <i class="fas fa-chart-line" style="font-size: 2.5rem; color: var(--primary); opacity: 0.9;"></i>
+        </div>
+    </div>
+
+    <!-- Profile Form -->
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: var(--spacing-6);">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Profile Picture -->
+            <div class="form-group" style="margin-bottom: var(--spacing-6); text-align: center;">
+                <div style="margin-bottom: var(--spacing-4);">
+                    {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename=current_user.profile_pic) }}"
+                             alt="{{ current_user.username }}'s profile picture"
+                             style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: var(--spacing-2);">
+                    {% else %}
+                        <div style="width: 150px; height: 150px; border-radius: 50%; background-color: var(--neutral-light); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--spacing-2);">
+                            <i class="fas fa-user" style="font-size: 4rem; color: var(--neutral);"></i>
+                        </div>
+                        <p style="color: var(--neutral); font-size: var(--font-size-sm);">No Profile Picture</p>
+                    {% endif %}
+                </div>
+                <input type="file" 
+                       id="profile_pic" 
+                       name="profile_pic" 
+                       accept="image/*"
+                       class="form-input"
+                       style="width: 100%;">
+                <p style="color: var(--neutral); font-size: var(--font-size-sm); margin-top: var(--spacing-2);">
+                    Upload a new profile picture (optional)
+                </p>
+            </div>
+
+            <!-- Personal Information -->
+            <div style="margin-bottom: var(--spacing-6);">
+                <h3 style="font-size: var(--font-size-lg); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">Personal Information</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-4); margin-bottom: var(--spacing-4);">
+                    <div class="form-group">
+                        <label for="first_name" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">First Name</label>
+                        <input type="text" 
+                               id="first_name" 
+                               name="first_name" 
+                               value="{{ current_user.first_name|capitalize_name }}"
+                               class="form-input"
+                               style="width: 100%;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last_name" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Last Name</label>
+                        <input type="text" 
+                               id="last_name" 
+                               name="last_name" 
+                               value="{{ current_user.last_name|capitalize_name }}"
+                               class="form-input"
+                               style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Bio</label>
+                    <textarea id="bio" 
+                              name="bio" 
+                              class="form-input"
+                              style="width: 100%; min-height: 120px; resize: vertical;">{{ current_user.bio|capitalize_first }}</textarea>
+                    <p style="color: var(--neutral); font-size: var(--font-size-sm); margin-top: var(--spacing-2);">
+                        Tell us about your learning goals and interests
+                    </p>
+                </div>
+            </div>
+
+            <!-- Account Settings -->
+            <div style="margin-bottom: var(--spacing-6);">
+                <h3 style="font-size: var(--font-size-lg); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">Change Password</h3>
+                
+                <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                    <label for="current_password" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Current Password</label>
+                    <input type="password" 
+                           id="current_password" 
+                           name="current_password" 
+                           class="form-input"
+                           style="width: 100%;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: var(--spacing-4);">
+                    <label for="new_password" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">New Password</label>
+                    <input type="password" 
+                           id="new_password" 
+                           name="new_password" 
+                           class="form-input"
+                           style="width: 100%;">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">Confirm New Password</label>
+                    <input type="password" 
+                           id="confirm_password" 
+                           name="confirm_password" 
+                           class="form-input"
+                           style="width: 100%;">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align: center;">
+                <button type="submit" class="btn btn-primary" style="padding: var(--spacing-3) var(--spacing-8);">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

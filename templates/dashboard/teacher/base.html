@@ -3,45 +3,438 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LearnHub - {% block title %}Teacher Dashboard{% endblock %}</title>
-    {% block head %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_home.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/managecourses.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    {% endblock %}   
-</head>
-<body>
-    <div class="dashboard-base">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h3>LearnHub</h3>
-                <p>Teacher Dashboard</p>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{{ url_for('teacher_dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
-                    <li><a href="{{ url_for('teacher_courses') }}"><i class="fas fa-book"></i> My Courses</a></li>
-                    <li><a href="{{ url_for('add_course') }}"><i class="fas fa-plus-circle"></i> Create Course</a></li>
-                    <li><a href="#"><i class="fas fa-chart-line"></i> Analytics</a></li>
-                    <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
+    <title>LearnHub - {% block title %}{% endblock %}</title>
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Original Dropdown Styles */
+        .profile-dropdown {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            padding: var(--spacing-2);
+            border-radius: var(--border-radius-lg);
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 1001;
+        }
 
-        <!-- Main Content -->
-        <main class="dashboard-main">
-            <header class="dashboard-topbar">
-                <div class="search-bar">
-                    <input type="text" placeholder="Search...">
-                    <button><i class="fas fa-search"></i></button>
+        .profile-dropdown:hover {
+            background-color: transparent;
+            border-radius: 30px;
+        }
+
+        .profile-image-wrapper {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: var(--primary-50);
+            margin-right: var(--spacing-3);
+            border: 2px solid var(--white);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .profile-dropdown:hover .profile-image-wrapper {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+            border-radius: 50%;
+        }
+
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-image-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, var(--primary-100), var(--primary-200));
+            color: var(--primary-600);
+            font-size: var(--font-size-xl);
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            transition: all 0.2s ease;
+        }
+
+        .profile-dropdown:hover .profile-info {
+            border-radius: 30px;
+        }
+
+        .username {
+            font-weight: 500;
+            color: var(--neutral-dark);
+            margin-right: var(--spacing-1);
+        }
+
+        .chevron-icon {
+            color: var(--neutral);
+            transition: transform 0.2s;
+            font-size: var(--font-size-sm);
+        }
+
+        .profile-dropdown:hover .chevron-icon {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            right: -10px;
+            top: calc(100% + 8px);
+            background-color: #f8fafc;
+            min-width: 220px;
+            margin-top: var(--spacing-2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            z-index: 1001;
+            transition: visibility 0s linear 0.2s, opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            transform: translateY(-10px);
+            overflow: hidden;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0s;
+            pointer-events: auto;
+            transform: translateY(0);
+            background-color: #f8fafc;
+        }
+
+        .dropdown-content a {
+            color: var(--neutral-dark);
+            padding: var(--spacing-3) var(--spacing-4);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+            transition: all 0.2s;
+            border-radius: 12px;
+            margin: 4px;
+            background-color: transparent;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #e2e8f0;
+        }
+
+        .dropdown-content a i {
+            width: 16px;
+            color: var(--neutral);
+            transition: color 0.2s;
+        }
+
+        .dropdown-content a:hover i {
+            color: var(--primary);
+        }
+
+        /* Divider in dropdown */
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: var(--spacing-1) 0;
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .profile-dropdown:hover {
+                background-color: #1e293b;
+            }
+
+            .profile-image-wrapper {
+                border-color: #1e293b;
+                background-color: #334155;
+            }
+
+            .profile-image-fallback {
+                background: linear-gradient(45deg, #1e293b, #334155);
+                color: var(--primary-200);
+            }
+
+            .dropdown-content {
+                background-color: #1e293b;
+                border-color: #334155;
+            }
+
+            .profile-dropdown:hover .dropdown-content {
+                background-color: #1e293b;
+            }
+
+            .dropdown-content a {
+                color: #f1f5f9;
+            }
+
+            .dropdown-content a:hover {
+                background-color: #334155;
+            }
+
+            .dropdown-divider {
+                background-color: #334155;
+            }
+        }
+
+        /* Navigation Layout */
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem 0.5rem;
+            position: relative;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-6);
+            margin-left: -0.5rem;
+        }
+
+        .nav-right {
+            margin-left: auto;
+            position: relative;
+        }
+
+        /* Navigation Links */
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-4);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            color: var(--neutral-dark);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: var(--neutral-light);
+            color: var(--neutral-dark);
+        }
+
+        .nav-link i {
+            font-size: 1.1rem;
+        }
+
+        /* Logo Styles */
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            text-decoration: none;
+            color: var(--neutral-dark);
+        }
+
+        .nav-logo i {
+            font-size: var(--font-size-4xl);
+            color: var(--primary);
+        }
+
+        .nav-logo span {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+        }
+
+        /* Mobile Menu Toggle Button */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--neutral-dark);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: background-color 0.2s;
+            margin-right: var(--spacing-2);
+        }
+
+        .mobile-menu-toggle:hover {
+            background-color: var(--neutral-light);
+            color: var(--primary);
+        }
+
+        /* Navigation Links - Desktop first approach */
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-4);
+        }
+
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .nav-links {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 80%;
+                max-width: 300px;
+                height: 100vh;
+                background: var(--nav-background);
+                flex-direction: column;
+                padding: var(--spacing-8) var(--spacing-4);
+                gap: var(--spacing-2);
+                z-index: 1000;
+                transition: left 0.3s ease;
+                box-shadow: var(--shadow-xl);
+            }
+
+            .nav-links.active {
+                left: 0;
+            }
+        }
+
+        /* Nav Overlay */
+        .nav-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .nav-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* No scroll class */
+        .no-scroll {
+            overflow: hidden;
+        }
+
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body style="background-color: var(--background);">
+    <!-- Main Navigation Bar -->
+    <nav class="nav-bar" style="background-color: var(--nav-background); box-shadow: var(--shadow);">
+        <div class="nav-container">
+            <div class="nav-left">
+                
+                <!-- Mobile Menu Toggle Button -->
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <a href="{{ url_for('home') }}" class="nav-logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>LearnHub</span>
+                </a>
+                <div class="nav-links">
+                    <a href="{{ url_for('home') }}" class="nav-link">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="nav-link">
+                        <i class="fas fa-book"></i> Courses
+                    </a>
+                    <a href="{{ url_for('teachers') }}" class="nav-link">
+                        <i class="fas fa-chalkboard-teacher"></i> Teachers
+                    </a>
+                    <a href="{{ url_for('about') }}" class="nav-link">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                    <a href="{{ url_for('contact') }}" class="nav-link">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
                 </div>
-                <div class="user-profile">
-                    <img src="{{ url_for('static', filename=current_user.profile_pic) if current_user.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ current_user.username }}">
-                    <span>{{ current_user.username }}</span>
+            </div>
+            <div class="nav-right">
+                <div class="profile-dropdown">
+                    <div class="profile-image-wrapper">
+                        {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename=current_user.profile_pic) }}" 
+                             alt="{{ current_user.username|title }}" 
+                             class="profile-image">
+                        {% else %}
+                        <div class="profile-image-fallback">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="profile-info">
+                        <span class="username">{{ current_user.username|title }}</span>
+                        <i class="fas fa-chevron-down chevron-icon"></i>
+                    </div>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('teacher_dashboard') }}">
+                            <i class="fas fa-columns"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('manage_courses') }}">
+                            <i class="fas fa-book-open"></i>
+                            <span>My Courses</span>
+                        </a>
+                        <a href="{{ url_for('create_course') }}">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create Course</span>
+                        </a>
+                        <a href="{{ url_for('teacher_earnings') }}">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>Earnings</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('teacher_profile') }}">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="{{ url_for('logout') }}" style="color: var(--danger);">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="nav-overlay"></div>
+    </nav>
+
+    <div class="dashboard-base" style="min-height: calc(100vh - 64px); background-color: var(--background);">
+        <!-- Main Content -->
+        <main class="dashboard-main" style="max-width: 1280px; margin: 0 auto; padding: var(--spacing-8);">
+            {% block dashboard_topbar %}
+            <header class="dashboard-topbar" style="margin-bottom: var(--spacing-8);">
+                <div class="logo-section">
+                    <h3 style="color: var(--neutral-dark); font-size: var(--font-size-3xl); margin-bottom: var(--spacing-2);">{% block header_title %}{% endblock %}</h3>
+                    <p style="color: var(--neutral); margin-left: 2px;">{% block header_subtitle %}Welcome back, {{ current_user.first_name|title or current_user.username|title }}{% endblock %}</p>
+                </div>
+                <div class="header-actions" style="margin-top: var(--spacing-4);">
+                    {% block header_actions %}{% endblock %}
                 </div>
             </header>
+            {% endblock %}
 
             <div class="dashboard-content">
                 {% block content %}{% endblock %}
@@ -49,7 +442,150 @@
         </main>
     </div>
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    {% block scripts %}{% endblock %}
+    {% block footer %}
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>LearnHub</h3>
+                <p>Your journey to knowledge starts here. Join our community of learners and educators.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('courses') }}">Courses</a>
+                <a href="{{ url_for('teachers') }}">Teachers</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>Email: info@learnhub.com</p>
+                <p>Phone: +1 (234) 567-8900</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; {{ current_year or 2024 }} LearnHub. All rights reserved.
+        </div>
+    </footer>
+    {% endblock %}
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdown = document.querySelector('.profile-dropdown');
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+        let timeoutId;
+
+        // Mobile menu toggle functionality
+        const mobileToggle = document.querySelector('.mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const navOverlay = document.querySelector('.nav-overlay');
+        
+        if (mobileToggle && navLinks && navOverlay) {
+            mobileToggle.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+                navOverlay.classList.toggle('active');
+                document.body.classList.toggle('no-scroll');
+            });
+
+            navOverlay.addEventListener('click', function() {
+                navLinks.classList.remove('active');
+                this.classList.remove('active');
+                document.body.classList.remove('no-scroll');
+            });
+        }
+
+        // Handle mouse enter on dropdown trigger
+        dropdown.addEventListener('mouseenter', function() {
+            clearTimeout(timeoutId);
+            dropdownContent.style.visibility = 'visible';
+            dropdownContent.style.opacity = '1';
+            dropdownContent.style.transitionDelay = '0s';
+            dropdownContent.style.pointerEvents = 'auto';
+        });
+
+        // Handle mouse leave on dropdown trigger
+        dropdown.addEventListener('mouseleave', function(e) {
+            // Check if mouse is moving to the dropdown content
+            if (!e.relatedTarget || !dropdownContent.contains(e.relatedTarget)) {
+                timeoutId = setTimeout(() => {
+                    if (!dropdownContent.matches(':hover')) {
+                        dropdownContent.style.visibility = 'hidden';
+                        dropdownContent.style.opacity = '0';
+                        dropdownContent.style.pointerEvents = 'none';
+                    }
+                }, 500); // 500ms delay before hiding
+            }
+        });
+
+        // Handle mouse enter on dropdown content
+        dropdownContent.addEventListener('mouseenter', function() {
+            clearTimeout(timeoutId);
+        });
+
+        // Handle mouse leave on dropdown content
+        dropdownContent.addEventListener('mouseleave', function() {
+            timeoutId = setTimeout(() => {
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.pointerEvents = 'none';
+            }, 500); // 500ms delay before hiding
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.pointerEvents = 'none';
+            }
+        });
+
+        // Handle keyboard navigation
+        dropdown.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (dropdownContent.style.visibility === 'hidden') {
+                    dropdownContent.style.visibility = 'visible';
+                    dropdownContent.style.opacity = '1';
+                    dropdownContent.style.pointerEvents = 'auto';
+                    // Focus first menu item
+                    dropdownContent.querySelector('a').focus();
+                } else {
+                    dropdownContent.style.visibility = 'hidden';
+                    dropdownContent.style.opacity = '0';
+                    dropdownContent.style.pointerEvents = 'none';
+                }
+            }
+        });
+
+        // Allow keyboard navigation within dropdown
+        dropdownContent.addEventListener('keydown', function(e) {
+            const items = Array.from(dropdownContent.querySelectorAll('a'));
+            const currentIndex = items.indexOf(document.activeElement);
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (currentIndex < items.length - 1) {
+                        items[currentIndex + 1].focus();
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (currentIndex > 0) {
+                        items[currentIndex - 1].focus();
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    dropdownContent.style.visibility = 'hidden';
+                    dropdownContent.style.opacity = '0';
+                    dropdownContent.style.pointerEvents = 'none';
+                    dropdown.focus();
+                    break;
+            }
+        });
+    });
+    </script>
 </body>
 </html>

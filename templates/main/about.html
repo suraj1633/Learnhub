@@ -6,35 +6,72 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
-{% block title %}Home - LearnHub{% endblock %}
+{% block title %}About - LearnHub{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="container">
-        <h1>Expand Your Knowledge</h1>
-        <p>Learn from industry experts at your own pace</p>
+<section class="about-hero">
+    <div class="about-hero-content">
+        <h1>About LearnHub</h1>
+        <p>Empowering learners and educators worldwide with accessible, high-quality education for everyone, everywhere.</p>
         <a href="{{ url_for('courses') }}" class="btn btn-primary">Browse Courses</a>
     </div>
 </section>
 
-<section class="featured-courses">
-    <div class="container">
-        <h2>Featured Courses</h2>
-        <div class="course-grid">
-            <!-- Sample course cards - replace with dynamic content -->
-            <div class="course-card">
-                <div class="course-thumbnail">
-                    <img src="{{ url_for('static', filename='images/course1.jpg') }}" alt="Web Development">
-                </div>
-                <div class="course-info">
-                    <h3>Complete Web Development Bootcamp</h3>
-                    <p class="instructor">By John Doe</p>
-                    <div class="rating">★★★★☆ (4.5)</div>
-                    <a href="#" class="btn btn-primary">View Course</a>
-                </div>
-            </div>
-            <!-- Add more course cards as needed -->
+<section class="about-mission card">
+    <h2>Our Mission</h2>
+    <p>At LearnHub, our mission is to democratize education by providing a platform where anyone can learn new skills, advance their career, or share their expertise with the world. We believe in lifelong learning and strive to make knowledge accessible, engaging, and affordable for all.</p>
+</section>
+
+<section class="about-features">
+    <h2>Why Choose LearnHub?</h2>
+    <div class="features-grid">
+        <div class="feature-card card">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <h3>Expert Instructors</h3>
+            <p>Learn from industry professionals and passionate educators who bring real-world experience to every course.</p>
+        </div>
+        <div class="feature-card card">
+            <i class="fas fa-laptop-code"></i>
+            <h3>Modern Learning</h3>
+            <p>Interactive lessons, hands-on projects, and up-to-date content ensure you gain practical, job-ready skills.</p>
+        </div>
+        <div class="feature-card card">
+            <i class="fas fa-globe"></i>
+            <h3>Global Community</h3>
+            <p>Join a diverse community of learners and educators from around the world. Collaborate, network, and grow together.</p>
+        </div>
+        <div class="feature-card card">
+            <i class="fas fa-certificate"></i>
+            <h3>Recognized Certificates</h3>
+            <p>Earn certificates to showcase your achievements and boost your resume or portfolio.</p>
         </div>
     </div>
+</section>
+
+<section class="about-team card">
+    <h2>Meet Our Team</h2>
+    <div class="team-grid">
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/profile_pics/profile_2_20250617205932_Screenshot_2024-12-19_105105.png') }}" alt="Team Member">
+            <h4>Suraj Sharma</h4>
+            <p>Founder & Lead Developer</p>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/profile_pics/profile_4_20250618211816_Screenshot_2024-02-18_185644.png') }}" alt="Team Member">
+            <h4>Priya Singh</h4>
+            <p>Head of Content</p>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/profile_pics/profile_2_20250618001411_Screenshot_2023-09-11_201020.png') }}" alt="Team Member">
+            <h4>Rahul Verma</h4>
+            <p>Community Manager</p>
+        </div>
+    </div>
+</section>
+
+<section class="about-cta">
+    <h2>Ready to Start Learning?</h2>
+    <p>Join thousands of learners and educators on LearnHub. Discover new opportunities, unlock your potential, and shape your future today.</p>
+    <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
 </section>
 {% endblock %}

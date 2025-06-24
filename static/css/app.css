@@ -1,0 +1,200 @@
+/* Core Theme */
+@import 'theme.css';
+@import 'main-navbar.css';
+
+/* Page-specific styles */
+@import 'home.css';
+@import 'dashboard.css';
+@import 'course.css';
+
+/* Component-specific styles */
+.footer {
+    background: rgba(31, 41, 55, 0.95);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: 0 -2px 24px 0 rgba(0,0,0,0.12);
+    color: var(--neutral-dark);
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    z-index: 100;
+    padding: 0;
+    margin: 0;
+    border-radius: 24px 24px 0 0;
+    border-top: 1.5px solid rgba(255,255,255,0.08);
+    animation: footerFadeIn 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes footerFadeIn {
+    from { opacity: 0; transform: translateY(60px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.footer-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2rem 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
+}
+.footer-section h3 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+}
+.footer-section h4 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    letter-spacing: 0.5px;
+}
+.footer-section p, .footer-section a {
+    color: var(--neutral);
+    opacity: 0.92;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+.footer-section a {
+    display: block;
+    text-decoration: none;
+    transition: color 0.2s, opacity 0.2s;
+}
+.footer-section a:hover {
+    color: var(--primary);
+    opacity: 1;
+}
+.social-links {
+    display: flex;
+    gap: 1.2rem;
+    margin-top: 0.5rem;
+}
+.social-links a {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    padding: 0.5rem;
+    transition: background 0.2s, color 0.2s;
+}
+.social-links a:hover {
+    background: var(--primary-color);
+    color: #fff;
+}
+.footer-bottom {
+    max-width: 1280px;
+    margin: 1.5rem auto 0;
+    padding: 1rem 2rem 1.2rem 2rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    text-align: center;
+    color: var(--neutral-light);
+    font-size: 0.95rem;
+    opacity: 0.85;
+}
+@media (max-width: 768px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 1.5rem 1rem 0 1rem;
+    }
+    .footer {
+        border-radius: 16px 16px 0 0;
+    }
+    .footer-bottom {
+        padding: 0.7rem 1rem 1rem 1rem;
+    }
+    .social-links {
+        justify-content: center;
+    }
+}
+body { padding-bottom: 270px !important; }
+
+/* Main Content */
+.main-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--spacing-6);
+    min-height: calc(100vh - 64px - 300px); /* Account for nav and footer */
+}
+
+/* Flash Messages */
+.alert {
+    max-width: 1280px;
+    margin: var(--spacing-4) auto;
+    padding: var(--spacing-4) var(--spacing-6);
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.close-alert {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: var(--spacing-2);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.close-alert:hover {
+    opacity: 1;
+}
+
+/* Form Styles */
+.form-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--spacing-6);
+}
+
+.form-title {
+    text-align: center;
+    margin-bottom: var(--spacing-8);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-4);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--spacing-2);
+    color: var(--neutral-dark);
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    border: 1px solid var(--neutral-light);
+    border-radius: var(--border-radius);
+    background-color: var(--card-background);
+    color: var(--neutral-dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.form-input.error {
+    border-color: var(--danger);
+}
+
+.error-message {
+    color: var(--danger);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-1);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .form-container {
+        padding: var(--spacing-4);
+    }
+} 

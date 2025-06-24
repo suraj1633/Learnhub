@@ -6,45 +6,348 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
-{% block title %}Teacher Dashboard - LearnHub{% endblock %}
+{% block title %}Home{% endblock %}
+
+{% block dashboard_topbar %}{% endblock %}
 
 {% block content %}
-<div class="dashboard-header">
-    <h1>Welcome, {{ current_user.first_name or current_user.username }}!</h1>
-    <p>Manage your courses and students</p>
+<div class="dashboard-container" style="margin-top: -1.5rem;">
+    <!-- Welcome Header -->
+    <div class="welcome-header" style="margin-bottom: var(--spacing-8);">
+        <h1 style="font-size: var(--font-size-4xl); color: var(--neutral-dark); margin-bottom: var(--spacing-2);">Welcome back, {{ current_user.first_name or current_user.username }}!</h1>
+        <p class="subtitle" style="color: var(--neutral); font-size: var(--font-size-lg);">Here's an overview of your teaching performance</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-container">
+        <div class="stats-card courses">
+            <div class="stats-content">
+                <h3>Total Courses</h3>
+                <p class="count" style="color: var(--primary);">{{ stats.total_courses }}</p>
+                <p class="trend">Active Courses</p>
+            </div>
+            <i class="fas fa-book-open stats-icon"></i>
+        </div>
+        
+        <div class="stats-card students">
+            <div class="stats-content">
+                <h3>Total Students</h3>
+                <p class="count" style="color: var(--warning);">{{ stats.total_students }}</p>
+                <p class="trend">Enrolled Students</p>
+            </div>
+            <i class="fas fa-users stats-icon" style="color: var(--warning);"></i>
+        </div>
+
+        <div class="stats-card earnings">
+            <div class="stats-content">
+                <h3>Total Earnings</h3>
+                <p class="count" style="color: var(--success);">${{ "%.2f"|format(stats.total_earnings) }}</p>
+                <p class="trend">Revenue Generated</p>
+            </div>
+            <i class="fas fa-dollar-sign stats-icon" style="color: var(--success);"></i>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create New Course
+        </a>
+    </div>
+
+    <!-- Recent Courses -->
+    <div class="recent-courses">
+        <h2>Your Courses</h2>
+        {% if stats.courses %}
+        <div class="courses-grid">
+            {% for course in stats.courses %}
+            <div class="course-card">
+                <div class="course-image">
+                    <a href="{{ url_for('view_course', course_id=course.course_id) }}">
+                        <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title|title }}">
+                    </a>
+                </div>
+                <div class="course-info">
+                    <h3>{{ course.title|title }}</h3>
+                    <div class="course-rating">
+                        {% set rating = course.average_rating|default(0) %}
+                        {% for _ in range(rating|int) %}
+                        <i class="fas fa-star" style="color: #FFD700;"></i>
+                        {% endfor %}
+                        {% for _ in range(5 - rating|int) %}
+                        <i class="far fa-star" style="color: #FFD700;"></i>
+                        {% endfor %}
+                        <div class="rating-details" style="margin-top: 5px; font-size: 0.9em;">
+                            <span style="color: #FFD700; font-size: 1.2em; font-weight: 500;">{{ "%.1f"|format(rating) }}</span>
+                            <span style="color: #FFFFFF; margin-left: 10px;">({{ course.reviews.count() }} reviews)</span>
+                        </div>
+                    </div>
+                    <p class="price">${{ "%.2f"|format(course.price) }}</p>
+                    <div class="course-stats">
+                        <span><i class="fas fa-users"></i> {{ course.enrollments|length }} students</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-courses">
+            <p>You haven't created any courses yet.</p>
+            <a href="{{ url_for('create_course') }}" class="btn btn-primary">Create Your First Course</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_content %}
+<!-- Delete Course Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Delete Course</h2>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete "<span id="courseTitle"></span>"?</p>
+            <p class="warning-text">This action cannot be undone.</p>
+            <form id="deleteCourseForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-<div class="dashboard-stats">
-    <div class="stat-card">
-        <h3>Your Courses</h3>
-        <p class="stat-value">{{ courses|length }}</p>
-        <a href="{{ url_for('teacher_courses') }}">View All</a>
-    </div>
-    <div class="stat-card">
-        <h3>Total Students</h3>
-        <p class="stat-value">
-            {% set student_count = namespace(total=0) %}
-            {% for course in courses %}
-                {% set student_count.total = student_count.total + course.enrollments|length %}
-            {% endfor %}
-            {{ student_count.total }}
-        </p>
-    </div>
-    <div class="stat-card">
-        <h3>Total Earnings</h3>
-        <p class="stat-value">
-            ${% set earnings = namespace(total=0) %}
-            {% for course in courses %}
-                {% set earnings.total = earnings.total + (course.price * course.enrollments|length) %}
-            {% endfor %}
-            {{ "%.2f"|format(earnings.total) }}
-        </p>
-    </div>
-</div>
+<style>
+.dashboard-content {
+    padding: var(--spacing-6);
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-<div class="quick-actions">
-    <a href="{{ url_for('add_course') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create New Course
-    </a>
-</div>
+.welcome-header {
+    margin-bottom: var(--spacing-8);
+}
+
+.welcome-header h1 {
+    font-size: var(--font-size-3xl);
+    color: var(--neutral-dark);
+}
+
+.courses-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.course-card {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.course-image {
+    height: 160px;
+    overflow: hidden;
+    position: relative;
+}
+
+.course-image a {
+    display: block;
+    height: 100%;
+    width: 100%;
+    cursor: pointer;
+}
+
+.course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover .course-image img {
+    transform: scale(1.05);
+}
+
+.course-info {
+    padding: var(--spacing-4);
+}
+
+.course-info h3 {
+    font-size: var(--font-size-lg);
+    color: var(--neutral-dark);
+    margin-bottom: var(--spacing-2);
+}
+
+.course-rating {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-3);
+}
+
+.stars {
+    display: flex;
+    gap: 2px;
+}
+
+.stars i {
+    color: var(--warning);
+    font-size: var(--font-size-sm);
+}
+
+.rating-value {
+    color: var(--neutral-dark);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.rating-count {
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+}
+
+.price {
+    color: var(--success);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-2);
+}
+
+.course-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    color: var(--neutral);
+    font-size: var(--font-size-sm);
+}
+
+.course-stats i {
+    color: var(--primary);
+}
+
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: var(--spacing-4);
+    }
+
+    .courses-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.warning-text {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+</style>
+
+<script>
+function openDeleteModal(courseId, courseTitle) {
+    const modal = document.getElementById('deleteModal');
+    const courseTitleSpan = document.getElementById('courseTitle');
+    const deleteForm = document.getElementById('deleteCourseForm');
+    
+    courseTitleSpan.textContent = courseTitle;
+    deleteForm.action = `/teacher/courses/${courseId}/delete`;
+    modal.style.display = 'block';
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        closeDeleteModal();
+    }
+}
+</script>
 {% endblock %}

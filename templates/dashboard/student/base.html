@@ -3,51 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LearnHub - {% block title %}Student Dashboard{% endblock %}</title>
-    {% block head %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/course.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    {% endblock %}    
+    <title>LearnHub - {% block title %}{% endblock %}</title>
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main-navbar.css') }}">
+    {% block head %}{% endblock %}
 </head>
-<body>
-    <div class="dashboard-base">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h3>LearnHub</h3>
-                <p>Student Dashboard</p>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{{ url_for('student_dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
-                    <li><a href="{{ url_for('student_courses') }}"><i class="fas fa-book-open"></i> My Courses</a></li>
-                    <li><a href="{{ url_for('student_profile') }}"><i class="fas fa-user"></i> Profile</a></li>
-                    <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="dashboard-main">
-            <header class="dashboard-topbar">
-                <div class="search-bar">
-                    <input type="text" placeholder="Search...">
-                    <button><i class="fas fa-search"></i></button>
+<body style="background-color: var(--background);">
+    <!-- Main Navigation Bar -->
+    <nav class="main-nav-bar min-height:10vh;">
+        <div class="main-nav-container">
+            <div class="main-nav-left">
+                <!-- Mobile Menu Toggle Button -->
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="{{ url_for('home') }}" class="main-nav-logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>LearnHub</span>
+                </a>
+                <div class="main-nav-links">
+                    <a href="{{ url_for('home') }}" class="main-nav-link {{ 'active' if request.endpoint == 'home' }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="main-nav-link {{ 'active' if request.endpoint == 'courses' }}">
+                        <i class="fas fa-book"></i> Courses
+                    </a>
+                    <a href="{{ url_for('teachers') }}" class="main-nav-link {{ 'active' if request.endpoint == 'teachers' }}">
+                        <i class="fas fa-chalkboard-teacher"></i> Teachers
+                    </a>
+                    <a href="{{ url_for('about') }}" class="main-nav-link {{ 'active' if request.endpoint == 'about' }}">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                    <a href="{{ url_for('contact') }}" class="main-nav-link {{ 'active' if request.endpoint == 'contact' }}">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
                 </div>
-                <div class="user-profile">
-                    <img src="{{ url_for('static', filename=current_user.profile_pic) if current_user.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ current_user.username }}">
-                    <span>{{ current_user.username }}</span>
+            </div>
+            <div class="main-nav-right">
+                {% if current_user.is_authenticated %}
+                <div class="main-profile-dropdown">
+                    <div class="main-profile-image-wrapper">
+                        {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename=current_user.profile_pic) }}" 
+                             alt="{{ current_user.username|title }}" 
+                             class="main-profile-image">
+                        {% else %}
+                        <div class="main-profile-image-fallback">
+                            {{ current_user.first_name[0] | upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="main-profile-info">
+                        <span class="main-username">{{ current_user.username|title }}</span>
+                        <i class="fas fa-chevron-down main-chevron-icon"></i>
+                    </div>
+                    <div class="main-dropdown-content">
+                        <a href="{{ url_for('student_dashboard') }}" class="{{ 'active' if request.endpoint == 'student_dashboard' }}">
+                            <i class="fas fa-columns"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('student_courses') }}" class="{{ 'active' if request.endpoint == 'student_courses' }}">
+                            <i class="fas fa-book-open"></i>
+                            <span>My Learning</span>
+                        </a>
+                        <div class="main-dropdown-divider"></div>
+                        <a href="{{ url_for('student_profile') }}" class="{{ 'active' if request.endpoint == 'student_profile' }}">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="{{ url_for('logout') }}" style="color: var(--danger);">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="main-nav-links">
+                    <a href="{{ url_for('login') }}" class="main-nav-link {{ 'active' if request.endpoint == 'login' }}">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="{{ url_for('register') }}" class="main-nav-link register">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="nav-overlay"></div>
+    </nav>
+    <div class="dashboard-base" style="min-height: calc(100vh - 64px); background-color: var(--background);">
+        <!-- Main Content -->
+        <main class="dashboard-main" style="max-width: 1280px; margin: 0 auto; padding: var(--spacing-8);">
+            {% block dashboard_topbar %}
+            <header class="dashboard-topbar" style="margin-bottom: var(--spacing-8);">
+                
+                <div class="header-actions" style="margin-top: var(--spacing-4);">
+                    {% block header_actions %}{% endblock %}
                 </div>
             </header>
-
+            {% endblock %}
             <div class="dashboard-content">
                 {% block content %}{% endblock %}
             </div>
         </main>
     </div>
-
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% block footer %}
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>LearnHub</h3>
+                <p>Your journey to knowledge starts here. Join our community of learners and educators.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('courses') }}">Courses</a>
+                <a href="{{ url_for('teachers') }}">Teachers</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>Email: info@learnhub.com</p>
+                <p>Phone: +1 (234) 567-8900</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; {{ current_year or 2024 }} LearnHub. All rights reserved.
+        </div>
+    </footer>
+    {% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdown = document.querySelector('.main-profile-dropdown');
+        if (!dropdown) return; // Exit if dropdown not found
+        const dropdownContent = dropdown.querySelector('.main-dropdown-content');
+        if (!dropdownContent) return; // Exit if dropdown content not found
+        let timeoutId;
+        // Mobile menu toggle functionality
+        const mobileToggle = document.querySelector('.mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const navOverlay = document.querySelector('.nav-overlay');
+        if (mobileToggle && navLinks && navOverlay) {
+            mobileToggle.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+                navOverlay.classList.toggle('active');
+                document.body.classList.toggle('no-scroll');
+            });
+            navOverlay.addEventListener('click', function() {
+                navLinks.classList.remove('active');
+                this.classList.remove('active');
+                document.body.classList.remove('no-scroll');
+            });
+        }
+        // Handle mouse enter on dropdown trigger
+        dropdown.addEventListener('mouseenter', function() {
+            clearTimeout(timeoutId);
+            dropdownContent.style.visibility = 'visible';
+            dropdownContent.style.opacity = '1';
+            dropdownContent.style.transitionDelay = '0s';
+            dropdownContent.style.pointerEvents = 'auto';
+        });
+        // Handle mouse leave on dropdown trigger
+        dropdown.addEventListener('mouseleave', function(e) {
+            if (!e.relatedTarget || !dropdownContent.contains(e.relatedTarget)) {
+                timeoutId = setTimeout(() => {
+                    if (!dropdownContent.matches(':hover')) {
+                        dropdownContent.style.visibility = 'hidden';
+                        dropdownContent.style.opacity = '0';
+                        dropdownContent.style.pointerEvents = 'none';
+                    }
+                }, 500);
+            }
+        });
+        // Handle mouse enter on dropdown content
+        dropdownContent.addEventListener('mouseenter', function() {
+            clearTimeout(timeoutId);
+        });
+        // Handle mouse leave on dropdown content
+        dropdownContent.addEventListener('mouseleave', function() {
+            timeoutId = setTimeout(() => {
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.pointerEvents = 'none';
+            }, 500);
+        });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.pointerEvents = 'none';
+            }
+        });
+        // Handle keyboard navigation
+        dropdown.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (dropdownContent.style.visibility === 'hidden') {
+                    dropdownContent.style.visibility = 'visible';
+                    dropdownContent.style.opacity = '1';
+                    dropdownContent.style.pointerEvents = 'auto';
+                    dropdownContent.querySelector('a').focus();
+                } else {
+                    dropdownContent.style.visibility = 'hidden';
+                    dropdownContent.style.opacity = '0';
+                    dropdownContent.style.pointerEvents = 'none';
+                }
+            }
+        });
+        // Allow keyboard navigation within dropdown
+        dropdownContent.addEventListener('keydown', function(e) {
+            const items = Array.from(dropdownContent.querySelectorAll('a'));
+            const currentIndex = items.indexOf(document.activeElement);
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (currentIndex < items.length - 1) {
+                        items[currentIndex + 1].focus();
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (currentIndex > 0) {
+                        items[currentIndex - 1].focus();
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    dropdownContent.style.visibility = 'hidden';
+                    dropdownContent.style.opacity = '0';
+                    dropdownContent.style.pointerEvents = 'none';
+                    dropdown.focus();
+                    break;
+            }
+        });
+    });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

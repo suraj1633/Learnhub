@@ -1,0 +1,123 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Create New Course{% endblock %}
+
+{% block header_title %}Create New Course{% endblock %}
+{% block header_subtitle %}{% endblock %}
+
+{% block content %}
+<div class="create-course-container">
+    <form action="{{ url_for('create_course') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Course Thumbnail -->
+        <div class="form-group">
+            <label class="form-label">Course Thumbnail</label>
+            <div style="text-align: center; margin-bottom: var(--spacing-6);">
+                <img id="thumbnail-preview" 
+                     src="{{ url_for('static', filename='images/default-course.jpg') }}" 
+                     alt="Course thumbnail preview"
+                     style="width: 100%; max-width: 600px; height: 338px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: var(--spacing-4);">
+                <input type="file" 
+                       id="thumbnail" 
+                       name="thumbnail" 
+                       accept="image/*"
+                       class="form-input"
+                       style="display: none;"
+                       onchange="previewImage(this)">
+                <label for="thumbnail" class="btn btn-outline" style="cursor: pointer;">
+                    <i class="fas fa-upload"></i> Upload Thumbnail
+                </label>
+            </div>
+        </div>
+
+        <!-- Course Details -->
+        <div style="display: grid; gap: var(--spacing-6);">
+            <!-- Course Title -->
+            <div class="form-group">
+                <label class="form-label" for="title">Course Title</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       class="form-input" 
+                       required 
+                       placeholder="Enter course title">
+            </div>
+
+            <!-- Course Description -->
+            <div class="form-group">
+                <label class="form-label" for="description">Course Description</label>
+                <textarea id="description" 
+                          name="description" 
+                          class="form-input" 
+                          required 
+                          rows="5"
+                          placeholder="Enter course description"></textarea>
+            </div>
+
+            <!-- Course Details Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-6);">
+                <!-- Course Category -->
+                <div class="form-group">
+                    <label class="form-label" for="category">Category</label>
+                    <select id="category" name="category" class="form-input" required>
+                        <option value="">Select a category</option>
+                        <option value="web-development">Web Development</option>
+                        <option value="data-science">Data Science</option>
+                        <option value="business">Business</option>
+                        <option value="design">Design</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="programming">Programming</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Course Price -->
+                <div class="form-group">
+                    <label class="form-label" for="price">Price ($)</label>
+                    <input type="number" 
+                           id="price" 
+                           name="price" 
+                           class="form-input" 
+                           required 
+                           min="0" 
+                           step="0.01"
+                           placeholder="Enter course price">
+                </div>
+
+                <!-- Course Status -->
+                <div class="form-group">
+                    <label class="form-label" for="status">Status</label>
+                    <select id="status" name="status" class="form-input" required>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                    </select>
+                    <p style="color: var(--neutral); font-size: var(--font-size-sm); margin-top: var(--spacing-2);">
+                        Draft courses won't be visible to students
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: var(--spacing-4); justify-content: flex-end; margin-top: var(--spacing-8);">
+            <a href="{{ url_for('manage_courses') }}" class="btn btn-neutral">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Course</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('thumbnail-preview').src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %} 

@@ -1,154 +1,332 @@
 {% extends "main/base.html" %}
 
-{% block head %}
-{{ super() }}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/details.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-{% endblock %}
-
 {% block title %}{{ course.title }} - LearnHub{% endblock %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
 {% block content %}
-<div class="course-detail-container">
-    <div class="course-header">
-        <div class="course-thumbnail">
-            <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" 
-                 alt="{{ course.title }}">
-        </div>
-        <div class="course-info">
+<div class="course-detail-page">
+    <header class="course-detail-header">
+        <div class="header-content">
+            <nav class="breadcrumbs">
+                <a href="{{ url_for('courses') }}">Courses</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="{{ url_for('courses', category=course.category) }}">{{ course.category }}</a>
+            </nav>
             <h1>{{ course.title }}</h1>
-            <p class="instructor">By {{ course.instructor.username }}</p>
-            
-            <div class="rating">
-                {% set avg_rating = namespace(value=0) %}
-                {% set review_count = reviews|length %}
-                {% if review_count > 0 %}
-                    {% set total = namespace(value=0) %}
-                    {% for review in reviews %}
-                        {% set total.value = total.value + review.rating %}
-                    {% endfor %}
-                    {% set avg_rating.value = total.value / review_count %}
-                {% endif %}
-                
-                {% for i in range(5) %}
-                    {% if i < avg_rating.value|round %}
-                        ★
-                    {% else %}
-                        ☆
-                    {% endif %}
-                {% endfor %}
-                ({{ "%.1f"|format(avg_rating.value) if review_count > 0 else "No ratings" }})
+            <p class="subtitle">{{ course.description|truncate(150) }}</p>
+            <div class="meta">
+                <span class="rating">
+                    <i class="fas fa-star"></i> {{ '%.1f'|format(avg_rating) }} ({{ reviews|length }} reviews)
+                </span>
+                <span class="students"><i class="fas fa-users"></i> {{ course.enrollments|length }} students</span>
+                <span class="instructor">Created by <a href="#">{{ course.teacher.first_name }} {{ course.teacher.last_name }}</a></span>
             </div>
-            
-            <div class="price">${{ "%.2f"|format(course.price) }}</div>
-            
-            {% if current_user.is_authenticated and current_user.user_type == 'student' %}
-                {% set is_enrolled = namespace(value=false) %}
-                {% for enrollment in current_user.enrollments %}
-                    {% if enrollment.course_id == course.course_id %}
-                        {% set is_enrolled.value = true %}
-                    {% endif %}
-                {% endfor %}
-                
-                {% if is_enrolled.value %}
-                    <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">
-                        Continue Learning
-                    </a>
-                {% else %}
-                    <form action="{{ url_for('enroll_course', course_id=course.course_id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-primary">Enroll Now</button>
-                    </form>
-                {% endif %}
-            {% elif not current_user.is_authenticated %}
-                <a href="{{ url_for('login') }}" class="btn btn-primary">Login to Enroll</a>
-            {% endif %}
         </div>
-    </div>
+    </header>
 
-    <div class="course-description">
-        <h2>About This Course</h2>
-        <p>{{ course.description }}</p>
-    </div>
+    <div class="course-detail-body">
+        <div class="course-main-content">
+            <div class="what-you-will-learn card">
+                <h3>What you'll learn</h3>
+                <ul>
+                    <li><i class="fas fa-check"></i> Foundational concepts of the subject.</li>
+                    <li><i class="fas fa-check"></i> Practical skills through hands-on examples.</li>
+                    <li><i class="fas fa-check"></i> Advanced topics to master the field.</li>
+                    <li><i class="fas fa-check"></i> How to apply your knowledge to real-world projects.</li>
+                </ul>
+            </div>
 
-    <!-- Add this section where you display course content -->
-    <div class="course-curriculum">
-        <h3>Course Curriculum</h3>
-        <ul class="curriculum-list">
-            {% for item in content %}
-            <li>
-                {% if enrollment %}
-                    <a href="{{ url_for('view_course_content', course_id=course.course_id, content_id=item.content_id) }}">
+            <div class="curriculum card">
+                <h3>Course Content</h3>
+                <ul class="curriculum-list">
+                    {% for item in content %}
+                    <li>
+                        <i class="fas fa-{{ 'play-circle' if item.content_type == 'video' else 'file-alt' }}"></i>
+                        <span>{{ item.title }}</span>
+                        <span class="duration">{{ item.duration or '5m' }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="reviews card">
+                <h3>Student Reviews</h3>
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="review-author">
+                        <img src="{{ url_for('static', filename=review.author.profile_pic) if review.author.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="author">
+                        <div>
+                            <strong>{{ review.author.username }}</strong>
+                            <span class="review-rating">
+                                {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                {% for i in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="review-comment">{{ review.comment }}</p>
+                </div>
                 {% else %}
-                    <a href="#" class="disabled" onclick="alert('You need to enroll in this course first')">
-                {% endif %}
-                    <i class="fas fa-{{ 'play-circle' if item.content_type == 'video' else 'file-alt' }}"></i>
-                    {{ item.title }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div class="course-reviews">
-        <h2>Reviews</h2>
-        {% if reviews %}
-            {% for review in reviews %}
-            <div class="review">
-                <div class="review-header">
-                    <div class="review-author">{{ review.author.username }}</div>
-                    <div class="review-rating">
-                        {% for i in range(5) %}
-                            {% if i < review.rating %}
-                                ★
-                            {% else %}
-                                ☆
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="review-content">
-                    <p>{{ review.comment or 'No comment provided' }}</p>
-                    <small>{{ review.created_at.strftime('%B %d, %Y') }}</small>
-                </div>
+                <p>No reviews for this course yet.</p>
+                {% endfor %}
             </div>
-            {% endfor %}
-        {% else %}
-            <p>No reviews yet.</p>
-        {% endif %}
+        </div>
 
-        {% if current_user.is_authenticated and current_user.user_type == 'student' %}
-            {% set has_reviewed = namespace(value=false) %}
-            {% for review in reviews %}
-                {% if review.student_id == current_user.user_id %}
-                    {% set has_reviewed.value = true %}
+        <aside class="course-sidebar">
+            <div class="sidebar-card card">
+                <div class="course-preview">
+                    <img src="{{ url_for('static', filename=course.thumbnail_url) }}" alt="Course thumbnail">
+                    <div class="play-icon"><i class="fas fa-play-circle"></i></div>
+                </div>
+                <div class="price">${{ '%.2f'|format(course.price) }}</div>
+
+                {% if current_user.is_authenticated and current_user.user_type == 'student' %}
+                    {% set is_enrolled = enrollment %}
+                    {% if is_enrolled %}
+                        <a href="{{ url_for('view_course_content', course_id=course.course_id, content_id=content[0].content_id) if content else '#' }}" class="btn btn-primary full-width">Go to Course</a>
+                    {% else %}
+                        <form action="{{ url_for('enroll_course', course_id=course.course_id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary full-width">Enroll Now</button>
+                        </form>
+                    {% endif %}
+                {% elif not current_user.is_authenticated %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary full-width">Login to Enroll</a>
+                {% else %}
+                    <p class="text-center">Teachers cannot enroll in courses.</p>
                 {% endif %}
-            {% endfor %}
-            
-            {% if not has_reviewed.value %}
-            <div class="add-review">
-                <h3>Add Your Review</h3>
-                <form action="{{ url_for('add_review', course_id=course.course_id) }}" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-group">
-                        <label>Rating</label>
-                        <select name="rating" required>
-                            <option value="5">5 Stars</option>
-                            <option value="4">4 Stars</option>
-                            <option value="3">3 Stars</option>
-                            <option value="2">2 Stars</option>
-                            <option value="1">1 Star</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Comment</label>
-                        <textarea name="comment" rows="4"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit Review</button>
-                </form>
+                
+                <ul class="course-includes">
+                    <li><i class="fas fa-video"></i> 5 hours of video</li>
+                    <li><i class="fas fa-file-alt"></i> 10 articles</li>
+                    <li><i class="fas fa-download"></i> Downloadable resources</li>
+                    <li><i class="fas fa-infinity"></i> Full lifetime access</li>
+                    <li><i class="fas fa-mobile-alt"></i> Access on mobile and TV</li>
+                    <li><i class="fas fa-certificate"></i> Certificate of completion</li>
+                </ul>
             </div>
-            {% endif %}
-        {% endif %}
+        </aside>
     </div>
 </div>
+
+<style>
+    :root {
+        --course-detail-header-bg: #1f2937;
+        --card-bg: #2d3748;
+        --text-color: #f9fafb;
+        --text-light: #9ca3af;
+        --primary-color: #3b82f6;
+    }
+    .course-detail-page {
+        background-color: var(--background);
+        color: var(--text-color);
+    }
+    .course-detail-header {
+        background-color: var(--course-detail-header-bg);
+        padding: 4rem 2rem;
+        color: white;
+    }
+    .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+    .breadcrumbs {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    .breadcrumbs a {
+        color: var(--text-light);
+        text-decoration: none;
+    }
+    .breadcrumbs a:hover {
+        color: var(--primary-color);
+    }
+    .breadcrumbs i {
+        margin: 0 0.5rem;
+        font-size: 0.7rem;
+    }
+    .course-detail-header h1 {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+    .subtitle {
+        font-size: 1.2rem;
+        color: var(--text-light);
+        max-width: 700px;
+        margin-bottom: 1.5rem;
+    }
+    .meta {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+        font-size: 0.95rem;
+    }
+    .meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .meta .rating, .meta .instructor a {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    .course-detail-body {
+        display: flex;
+        gap: 2rem;
+        max-width: 1280px;
+        margin: -3rem auto 2rem auto;
+        position: relative;
+    }
+    .course-main-content {
+        flex-grow: 1;
+        width: 70%;
+    }
+    .course-sidebar {
+        width: 30%;
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+    }
+    .card {
+        background-color: var(--card-bg);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--neutral-light);
+    }
+    .what-you-will-learn ul {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    .what-you-will-learn li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+    .what-you-will-learn i {
+        color: var(--primary-color);
+        margin-top: 5px;
+    }
+    .curriculum-list {
+        list-style: none;
+        padding: 0;
+    }
+    .curriculum-list li {
+        display: flex;
+        align-items: center;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid var(--neutral-light);
+    }
+    .curriculum-list li:last-child {
+        border-bottom: none;
+    }
+    .curriculum-list i {
+        color: var(--primary-color);
+        margin-right: 1rem;
+    }
+    .duration {
+        margin-left: auto;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+    .reviews .review-item {
+        border-bottom: 1px solid var(--neutral-light);
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .reviews .review-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .review-author {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .review-author img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .review-rating {
+        color: #f59e0b;
+        font-size: 0.9rem;
+    }
+    .review-comment {
+        color: var(--text-light);
+    }
+    .sidebar-card .course-preview {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    .sidebar-card .course-preview img {
+        width: 100%;
+        border-radius: 1rem;
+    }
+    .play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .play-icon:hover {
+        color: white;
+    }
+    .price {
+        font-size: 2.5rem;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .btn.full-width {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        justify-content: center;
+    }
+    .course-includes {
+        list-style: none;
+        padding: 1rem 0 0 0;
+        margin-top: 1.5rem;
+        border-top: 1px solid var(--neutral-light);
+    }
+    .course-includes li {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 0.8rem;
+        color: var(--text-light);
+    }
+    .course-includes i {
+        color: var(--primary-color);
+        width: 20px;
+        text-align: center;
+    }
+    @media (max-width: 900px) {
+        .course-detail-body {
+            flex-direction: column;
+        }
+        .course-main-content, .course-sidebar {
+            width: 100%;
+        }
+    }
+</style>
 {% endblock %}

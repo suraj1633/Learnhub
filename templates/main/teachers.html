@@ -1,27 +1,111 @@
 {% extends "main/base.html" %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/teachers.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
 {% block title %}Our Instructors - LearnHub{% endblock %}
 
 {% block content %}
 <section class="teachers-section">
     <div class="container">
-        <h1>Meet Our Instructors</h1>
-        <p class="subtitle">Learn from industry experts and passionate educators</p>
+        <div class="section-header">
+            <h1>Meet Our Expert Instructors</h1>
+            <p class="subtitle">Learn from industry professionals and passionate educators</p>
+        </div>
         
+        <div class="search-filter">
+            <input type="text" id="teacher-search" placeholder="Search instructors...">
+            <select id="specialty-filter">
+                <option value="all">All Specialties</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Business">Business</option>
+                <option value="Design">Design</option>
+            </select>
+        </div>
+
         <div class="teachers-grid">
             {% for teacher in teachers %}
-            <div class="teacher-card">
+            <div class="teacher-card" 
+                 data-name="{{ teacher.username }}"
+                 data-specialty="{% if teacher.courses_teaching %}{{ teacher.courses_teaching[0].category if teacher.courses_teaching else 'General' }}{% else %}General{% endif %}">
                 <div class="teacher-photo">
-                    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ teacher.username }}">
+                    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" 
+                         alt="{{ teacher.username }}"
+                         class="profile-image">
                 </div>
                 <div class="teacher-info">
-                    <h3>{{ teacher.username }}</h3>
-                    <p class="specialty">Web Development Instructor</p>
-                    <a href="#" class="btn">View Profile</a>
+                    <h3>
+                        {% if teacher.first_name or teacher.last_name %}
+                            {{ teacher.first_name }} {{ teacher.last_name }}
+                        {% else %}
+                            {{ teacher.username }}
+                        {% endif %}
+                    </h3>
+                    <p class="specialty">
+                        {% if teacher.courses_teaching %}
+                            {{ teacher.courses_teaching[0].category }} Instructor
+                        {% else %}
+                            General Instructor
+                        {% endif %}
+                    </p>
+                    <div class="stats">
+                        <div class="stat">
+                            <i class="fas fa-book"></i>
+                            <span>{{ teacher.courses_teaching|length }} Courses</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-users"></i>
+                            <span>
+                                {% set total_students = namespace(value=0) %}
+                                {% for course in teacher.courses_teaching %}
+                                    {% set total_students.value = total_students.value + course.enrollments|length %}
+                                {% endfor %}
+                                {{ total_students.value }} Students
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('public_teacher_profile', teacher_id=teacher.user_id) }}" class="btn btn-outline">View Profile</a>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('teacher-search');
+    const specialtyFilter = document.getElementById('specialty-filter');
+    const teacherCards = document.querySelectorAll('.teacher-card');
+
+    function filterTeachers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const specialty = specialtyFilter.value;
+
+        teacherCards.forEach(card => {
+            const name = card.dataset.name.toLowerCase();
+            const teacherSpecialty = card.dataset.specialty;
+            
+            const nameMatch = name.includes(searchTerm);
+            const specialtyMatch = specialty === 'all' || teacherSpecialty === specialty;
+            
+            if (nameMatch && specialtyMatch) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterTeachers);
+    specialtyFilter.addEventListener('change', filterTeachers);
+});
+</script>
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends "dashboard/student/base.html" %}
 
-{% block title %}My Courses - LearnHub{% endblock %}
+{% block title %}My Learning - LearnHub{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -9,49 +9,116 @@
 
 {% block content %}
 <div class="courses-container">
-    <!-- Centered header -->
+    <!-- Header -->
     <div class="courses-header">
-        <h1>My Courses</h1>
+        <h1>My Learning</h1>
+        <p style="color: var(--dark); font-size: 1rem; margin-top: 0.5rem;">All your enrolled courses in one place.</p>
     </div>
 
-    <!-- Animated dropdown filter -->
+    <!-- Filter Bar -->
     <div class="filter-container">
         <div class="course-filter">
-            <select class="styled-select">
-                <option>All Courses</option>
-                <option>In Progress</option>
-                <option>Completed</option>
+            <select class="styled-select" id="status-filter" onchange="filterCourses()">
+                <option value="all">All Courses</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
             </select>
-            <div class="select-arrow"></div>
         </div>
     </div>
 
-    <!-- Full-width courses grid -->
-    <div class="courses-grid">
-        {% for course, enrollment in enrolled_courses %}
-        <div class="course-card">
-            <div class="course-progress">
-                <div class="progress-bar" style="width: {{ enrollment.progress }}%"></div>
-                <span class="progress-text">{{ enrollment.progress }}% Complete</span>
-            </div>
-            <div class="course-thumbnail">
-                <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}"
-                    alt="{{ course.title }}">
+    <!-- Courses Grid -->
+    <div class="courses-grid" id="courses-grid">
+        {% if enrolled_courses %}
+            {% for course, enrollment in enrolled_courses %}
+            <div class="course-card" data-status="{{ 'completed' if enrollment.completed else 'in-progress' }}" style="background: var(--card-background); border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transition: transform 0.2s, box-shadow 0.2s; color: var(--text); font-weight: 600;">
+                <div class="course-thumbnail">
+                    <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
                     <div class="course-progress">
                         <div class="progress-bar" style="width: {{ enrollment.progress }}%"></div>
                     </div>
+                    {% if enrollment.completed %}
+                    <span class="completion-badge" style="position:absolute;top:10px;right:10px;background:var(--secondary);color:white;padding:0.3rem 0.7rem;border-radius:12px;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem;">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </span>
+                    {% else %}
+                    <span class="completion-badge" style="position:absolute;top:10px;right:10px;background:var(--primary);color:white;padding:0.3rem 0.7rem;border-radius:12px;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem;">
+                        <i class="fas fa-hourglass-half"></i> In Progress
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="course-info">
+                    <h3 style="color: var(--white); font-size: 1.18rem; font-weight: 800; letter-spacing: 0.01em; font-family: 'Inter', sans-serif; text-shadow: 0 2px 8px rgba(0,0,0,0.18);">{{ course.title }}</h3>
+                    <p class="instructor" style="color: var(--primary-light); font-size: 0.95rem; font-weight: 500; font-family: 'Inter', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.10);">By {{ course.teacher.username }}</p>
+                    <div class="progress-bar-section" style="margin: 1rem 0 0.7rem 0;">
+                        <div class="progress-label" style="color: var(--primary-light); font-size: 0.98rem; font-weight: 600; font-family: 'Inter', sans-serif; margin-bottom: 0.3rem;">Progress: {{ enrollment.progress }}%</div>
+                        <div class="progress-bar-outer">
+                            <div class="progress-bar-inner" style="width: {{ enrollment.progress }}%"></div>
+                        </div>
+                    </div>
+                    <div class="course-actions">
+                        {% if enrollment.completed %}
+                        <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-success">
+                            <i class="fas fa-book-reader"></i> Review Course
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">
+                            <i class="fas fa-play-circle"></i> Continue Learning
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            <div class="course-info">
-                <h3>{{ course.title }}</h3>
-                <p class="instructor">By {{ course.instructor.username }}</p>
-                {% if enrollment.completed %}
-                <button class="btn btn-success">Completed</button>
-                {% else %}
-                <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">Continue</a>
-                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem; background: var(--card-background); border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                <img src="{{ url_for('static', filename='images/empty-content.svg') }}" alt="No courses" style="width: 120px; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.3rem; color: var(--text); margin-bottom: 0.5rem;">No Courses Yet</h2>
+                <p style="color: var(--dark); margin-bottom: 1.5rem;">You haven't enrolled in any courses yet. Start your learning journey today!</p>
+                <a href="{{ url_for('courses') }}" class="btn btn-primary" style="max-width: 200px; margin: 0 auto;">Browse Courses</a>
             </div>
-        </div>
-        {% endfor %}
+        {% endif %}
     </div>
 </div>
+
+<script>
+function filterCourses() {
+    const filter = document.getElementById('status-filter').value;
+    const cards = document.querySelectorAll('.course-card');
+    cards.forEach(card => {
+        if (filter === 'all' || card.dataset.status === filter) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+
+<style>
+.course-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+}
+.course-card h3 {
+    font-family: 'Inter', sans-serif;
+}
+.progress-bar-section {
+    width: 100%;
+}
+.progress-bar-outer {
+    width: 100%;
+    height: 10px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-light) 0%, var(--primary) 100%);
+    border-radius: 8px;
+    transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 1px 6px rgba(79,70,229,0.15);
+}
+</style>
 {% endblock %}

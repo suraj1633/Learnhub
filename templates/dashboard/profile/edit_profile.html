@@ -1,0 +1,132 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="profile-edit" style="max-width: 800px; margin: 0 auto; padding: var(--spacing-6);">
+    <div class="card" style="padding: var(--spacing-8);">
+        <h1 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-8);">
+            Edit Profile
+        </h1>
+
+        <form method="POST" enctype="multipart/form-data" class="profile-form">
+            {{ form.csrf_token }}
+            
+            <!-- Profile Picture -->
+            <div style="margin-bottom: var(--spacing-8); text-align: center;">
+                <div style="position: relative; width: 150px; height: 150px; margin: 0 auto var(--spacing-4);">
+                    <img id="profile-preview"
+                         src="{{ url_for('static', filename=current_user.profile_pic) if current_user.profile_pic else url_for('static', filename='images/default-profile.jpg') }}"
+                         alt="Profile Picture"
+                         style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                    <label for="profile_pic" style="position: absolute; bottom: 0; right: 0; background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                </div>
+                {{ form.profile_pic(class="hidden", onchange="previewImage(this)") }}
+            </div>
+
+            <!-- Personal Information -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Personal Information
+                </h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-6);">
+                    <div class="form-group">
+                        <label for="first_name" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                            First Name
+                        </label>
+                        {{ form.first_name(class="form-control", placeholder="Enter your first name") }}
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                            Last Name
+                        </label>
+                        {{ form.last_name(class="form-control", placeholder="Enter your last name") }}
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: var(--spacing-6);">
+                    <label for="bio" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                        Bio
+                    </label>
+                    {{ form.bio(class="form-control", rows="4", placeholder="Tell us about yourself") }}
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Contact Information
+                </h2>
+                <div class="form-group">
+                    <label for="email" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                        Email
+                    </label>
+                    {{ form.email(class="form-control", placeholder="Enter your email") }}
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Social Links
+                </h2>
+                <div style="display: grid; gap: var(--spacing-6);">
+                    <div class="form-group">
+                        <label for="website" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                            <i class="fas fa-globe"></i> Website
+                        </label>
+                        {{ form.website(class="form-control", placeholder="https://") }}
+                    </div>
+                    <div class="form-group">
+                        <label for="linkedin" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                            <i class="fab fa-linkedin"></i> LinkedIn
+                        </label>
+                        {{ form.linkedin(class="form-control", placeholder="LinkedIn profile URL") }}
+                    </div>
+                    <div class="form-group">
+                        <label for="github" style="display: block; margin-bottom: var(--spacing-2); color: var(--neutral-dark);">
+                            <i class="fab fa-github"></i> GitHub
+                        </label>
+                        {{ form.github(class="form-control", placeholder="GitHub profile URL") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h2 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+                    Preferences
+                </h2>
+                <div class="form-group">
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: var(--spacing-2); color: var(--neutral-dark);">
+                        {{ form.email_notifications() }}
+                        <span>Receive email notifications</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary" style="min-width: 150px;">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profile-preview').src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %} 

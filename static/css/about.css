@@ -206,3 +206,211 @@
 .hero .btn {
     animation-delay: 0.4s;
 }
+
+/* About Page - Theme Matching Modern Styles */
+:root {
+    --about-hero-gradient: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 100%);
+}
+
+.about-hero {
+    background: var(--about-hero-gradient);
+    color: var(--neutral-dark);
+    padding: 4rem 0 3rem 0;
+    text-align: center;
+}
+.about-hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+}
+.about-hero h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 1.2rem;
+    color: var(--neutral-dark);
+}
+.about-hero p {
+    font-size: 1.25rem;
+    color: var(--neutral);
+    margin-bottom: 2rem;
+}
+.about-hero .btn {
+    font-size: 1.1rem;
+    padding: 0.9rem 2.2rem;
+    margin-top: 1rem;
+}
+
+.about-mission.card {
+    background: var(--card-background);
+    color: var(--neutral-dark);
+    margin: 2.5rem auto 2rem auto;
+    max-width: 900px;
+    padding: 2.5rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+.about-mission h2 {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+.about-mission p {
+    color: var(--neutral);
+    font-size: 1.15rem;
+}
+
+.about-features {
+    margin: 3rem 0 2rem 0;
+    text-align: center;
+}
+.about-features h2 {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.feature-card {
+    background: var(--card-background);
+    color: var(--neutral-dark);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.feature-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--shadow-lg);
+}
+.feature-card i {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+.feature-card h3 {
+    font-size: 1.2rem;
+    color: var(--primary-light);
+    margin-bottom: 0.7rem;
+}
+.feature-card p {
+    color: var(--neutral);
+    font-size: 1.05rem;
+}
+
+.about-team.card {
+    background: var(--card-background);
+    color: var(--neutral-dark);
+    margin: 3rem auto 2rem auto;
+    max-width: 900px;
+    padding: 2.5rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+.about-team h2 {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+.team-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2.5rem;
+}
+.team-member {
+    background: var(--background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+    width: 220px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.team-member:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: var(--shadow-md);
+}
+.team-member img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid var(--primary);
+}
+.team-member h4 {
+    color: var(--primary-light);
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+}
+.team-member p {
+    color: var(--neutral);
+    font-size: 1rem;
+}
+
+.about-cta {
+    background: var(--primary);
+    color: #fff;
+    text-align: center;
+    padding: 3rem 1rem 3.5rem 1rem;
+    border-radius: var(--border-radius);
+    margin: 3rem auto 2rem auto;
+    max-width: 900px;
+    box-shadow: var(--shadow);
+}
+.about-cta h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+.about-cta p {
+    color: #e0e7ef;
+    font-size: 1.15rem;
+    margin-bottom: 2rem;
+}
+.about-cta .btn {
+    background: #fff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0.9rem 2.2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: background 0.2s, color 0.2s;
+}
+.about-cta .btn:hover {
+    background: var(--primary-dark);
+    color: #fff;
+}
+
+@media (max-width: 900px) {
+    .features-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .team-grid {
+        gap: 1.5rem;
+    }
+}
+@media (max-width: 600px) {
+    .about-hero h1 {
+        font-size: 2rem;
+    }
+    .about-mission.card, .about-team.card, .about-cta {
+        padding: 1.2rem 0.5rem;
+    }
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+    .team-member {
+        width: 100%;
+        padding: 1rem 0.5rem;
+    }
+}

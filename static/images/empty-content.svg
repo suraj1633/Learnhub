@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="200" viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Elements -->
+    <circle cx="120" cy="100" r="90" fill="#F3F4F6" opacity="0.5"/>
+    <circle cx="120" cy="100" r="70" fill="#E5E7EB" opacity="0.3"/>
+    
+    <!-- Document Stack -->
+    <rect x="70" y="60" width="100" height="120" rx="8" fill="#ffffff" stroke="#D1D5DB" stroke-width="2"/>
+    <rect x="80" y="50" width="100" height="120" rx="8" fill="#ffffff" stroke="#D1D5DB" stroke-width="2"/>
+    <rect x="90" y="40" width="100" height="120" rx="8" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+    
+    <!-- Content Lines -->
+    <rect x="110" y="60" width="60" height="6" rx="3" fill="#6366f1"/>
+    <rect x="110" y="75" width="40" height="4" rx="2" fill="#D1D5DB"/>
+    <rect x="110" y="90" width="50" height="4" rx="2" fill="#D1D5DB"/>
+    
+    <!-- Plus Icon -->
+    <circle cx="120" cy="130" r="15" fill="#6366f1"/>
+    <path d="M120 122V138" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <path d="M128 130H112" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg> 

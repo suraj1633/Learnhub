@@ -1,0 +1,97 @@
+{% extends "dashboard/teacher/base.html" %}
+
+{% block title %}Earnings Dashboard{% endblock %}
+
+{% block header_title %}Earnings Dashboard{% endblock %}
+{% block header_subtitle %}Track your course earnings and student enrollments{% endblock %}
+
+{% block content %}
+<div class="earnings-container">
+    <!-- Stats Overview -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-6); margin-bottom: var(--spacing-8);">
+        <!-- Total Earnings Card -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center; border-radius: 20px;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Total Earnings</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--success);">${{ "%.2f"|format(total_earnings) }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Lifetime earnings</p>
+            </div>
+            <i class="fas fa-dollar-sign" style="font-size: 2.5rem; color: var(--success); opacity: 0.9;"></i>
+        </div>
+
+        <!-- Total Students Card -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center; border-radius: 20px;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Total Students</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--primary);">{{ total_students }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Enrolled students</p>
+            </div>
+            <i class="fas fa-users" style="font-size: 2.5rem; color: var(--primary); opacity: 0.9;"></i>
+        </div>
+
+        <!-- Average Per Course Card -->
+        <div class="card" style="padding: var(--spacing-6); display: flex; justify-content: space-between; align-items: center; border-radius: 20px;">
+            <div>
+                <h3 style="color: var(--neutral); font-size: var(--font-size-base); margin-bottom: var(--spacing-2);">Average Per Course</h3>
+                <p style="font-size: var(--font-size-3xl); font-weight: 600; color: var(--warning);">${{ "%.2f"|format(total_earnings / course_earnings|length if course_earnings else 0) }}</p>
+                <p style="color: var(--neutral); font-size: var(--font-size-sm);">Average earnings</p>
+            </div>
+            <i class="fas fa-chart-line" style="font-size: 2.5rem; color: var(--warning); opacity: 0.9;"></i>
+        </div>
+    </div>
+
+    <!-- Course Earnings Table -->
+    <div class="card" style="padding: var(--spacing-6); border-radius: 20px;">
+        <h3 style="font-size: var(--font-size-xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">Course Earnings</h3>
+        
+        {% if course_earnings %}
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--neutral-light);">
+                        <th style="text-align: left; padding: var(--spacing-4); color: var(--neutral);">Course</th>
+                        <th style="text-align: center; padding: var(--spacing-4); color: var(--neutral);">Price</th>
+                        <th style="text-align: center; padding: var(--spacing-4); color: var(--neutral);">Students</th>
+                        <th style="text-align: right; padding: var(--spacing-4); color: var(--neutral);">Total Earnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in course_earnings %}
+                    <tr style="border-bottom: 1px solid var(--neutral-light);">
+                        <td style="padding: var(--spacing-4);">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-4);">
+                                <img src="{{ url_for('static', filename=item.course.thumbnail_url) if item.course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}"
+                                     alt="{{ item.course.title }}"
+                                     style="width: 48px; height: 48px; object-fit: cover; border-radius: var(--border-radius);">
+                                <div>
+                                    <h4 style="color: var(--neutral-dark); margin-bottom: var(--spacing-1);">{{ item.course.title }}</h4>
+                                    <p style="color: var(--neutral); font-size: var(--font-size-sm);">{{ item.course.category|title }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align: center; padding: var(--spacing-4);">${{ "%.2f"|format(item.course.price) }}</td>
+                        <td style="text-align: center; padding: var(--spacing-4);">{{ item.student_count }}</td>
+                        <td style="text-align: right; padding: var(--spacing-4); font-weight: 600;">${{ "%.2f"|format(item.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid var(--neutral-light);">
+                        <td colspan="2" style="padding: var(--spacing-4);"></td>
+                        <td style="text-align: center; padding: var(--spacing-4); font-weight: 600;">Total:</td>
+                        <td style="text-align: right; padding: var(--spacing-4); font-weight: 600; color: var(--success);">${{ "%.2f"|format(total_earnings) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: var(--spacing-8);">
+            <i class="fas fa-chart-bar" style="font-size: 4rem; color: var(--neutral-light); margin-bottom: var(--spacing-4);"></i>
+            <h3 style="color: var(--neutral-dark); margin-bottom: var(--spacing-2);">No Earnings Yet</h3>
+            <p style="color: var(--neutral); margin-bottom: var(--spacing-6);">Start creating and publishing courses to track your earnings</p>
+            <a href="{{ url_for('create_course') }}" class="btn btn-primary">Create Your First Course</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

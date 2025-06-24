@@ -14,31 +14,51 @@
         <div class="courses-header">
             <h1>Browse Our Courses</h1>
             <div class="search-filter">
-                <input type="text" placeholder="Search courses...">
-                <select>
-                    <option>All Categories</option>
-                    <option>Web Development</option>
-                    <option>Data Science</option>
-                    <option>Business</option>
+                <input type="text" id="course-search" placeholder="Search courses...">
+                <select id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="Programming">Programming</option>
+                    <option value="Design">Design</option>
+                    <option value="Business">Business</option>
+                    <option value="Marketing">Marketing</option>
                 </select>
             </div>
         </div>
 
         <div class="courses-grid">
             {% for course in courses %}
-            <div class="course-card">
+            <div class="course-card" 
+                 data-title="{{ course.title }}"
+                 data-description="{{ course.description }}"
+                 data-category="{{ course.category }}">
                 <div class="course-thumbnail">
                     <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
                 </div>
                 <div class="course-info">
-                    <h3>{{ course.title }}</h3>
-                    <p class="instructor">By {{ course.teacher_username }}</p>
-                    <p class="price">${{ course.price }}</p>
-                    <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary">View Course</a>
+                    <div class="course-meta-top">
+                        <span class="course-category"><i class="fas fa-tag"></i> {{ course.category }}</span>
+                        <span class="course-rating">
+                            <i class="fas fa-star"></i> {{ '%.1f'|format(course.reviews|map(attribute='rating')|list|avg|default(0, true)) }}
+                            <span class="course-reviews">({{ course.reviews_list|length }})</span>
+                        </span>
+                    </div>
+                    <h3 class="course-title">{{ course.title }}</h3>
+                    <div class="course-instructor">
+                        <i class="fas fa-user"></i> {{ course.teacher.first_name|default('', true) }} {{ course.teacher.last_name|default('', true) }}
+                    </div>
+                    <!-- <div class="course-description">{{ course.description[:90] }}{% if course.description|length > 90 %}...{% endif %}</div> -->
+                    <div class="course-meta-bottom">
+                        <span class="course-price">${{ '%.2f'|format(course.price|float) }}</span>
+                        <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="btn btn-primary view-course-btn">View Course</a>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/courses.js') }}"></script>
 {% endblock %}

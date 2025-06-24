@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Shapes -->
+    <circle cx="400" cy="300" r="250" fill="#E0F2FE" opacity="0.5"/>
+    <circle cx="450" cy="250" r="200" fill="#BAE6FD" opacity="0.3"/>
+    
+    <!-- Book Stack -->
+    <g transform="translate(300, 200)">
+        <!-- Book 1 -->
+        <rect x="0" y="0" width="200" height="40" rx="5" fill="#2563EB"/>
+        <!-- Book 2 -->
+        <rect x="20" y="40" width="200" height="40" rx="5" fill="#4F46E5"/>
+        <!-- Book 3 -->
+        <rect x="-20" y="80" width="200" height="40" rx="5" fill="#3B82F6"/>
+    </g>
+    
+    <!-- Graduation Cap -->
+    <g transform="translate(350, 150)">
+        <!-- Cap Base -->
+        <rect x="0" y="0" width="100" height="20" rx="5" fill="#1E40AF"/>
+        <!-- Cap Top -->
+        <path d="M50 -30 L0 0 L100 0 Z" fill="#1E40AF"/>
+        <!-- Tassel -->
+        <path d="M80 0 Q90 20 100 40" stroke="#1E40AF" stroke-width="3" fill="none"/>
+        <circle cx="100" cy="40" r="5" fill="#1E40AF"/>
+    </g>
+    
+    <!-- Decorative Elements -->
+    <g transform="translate(200, 400)">
+        <!-- Code Brackets -->
+        <path d="M0 0 L20 -20 L20 20 Z" fill="#60A5FA"/>
+        <path d="M40 0 L60 20 L60 -20 Z" fill="#60A5FA"/>
+    </g>
+    
+    <g transform="translate(500, 400)">
+        <!-- Paint Brush Stroke -->
+        <path d="M0 0 Q20 -20 40 0 Q60 20 80 0" stroke="#93C5FD" stroke-width="8" stroke-linecap="round" fill="none"/>
+    </g>
+    
+    <!-- Floating Icons -->
+    <g>
+        <!-- Star -->
+        <path d="M600 100 L610 120 L630 120 L615 135 L620 155 L600 145 L580 155 L585 135 L570 120 L590 120 Z" fill="#FCD34D"/>
+        <!-- Circle -->
+        <circle cx="200" cy="150" r="15" fill="#F472B6"/>
+        <!-- Square -->
+        <rect x="550" cy="350" width="30" height="30" transform="rotate(45 565 365)" fill="#34D399"/>
+    </g>
+</svg> 

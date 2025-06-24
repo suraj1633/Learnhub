@@ -1,0 +1,198 @@
+/* Theme Colors */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #3b82f6;
+    --success: #059669;
+    --success-dark: #047857;
+    --success-light: #10b981;
+    --warning: #d97706;
+    --warning-dark: #b45309;
+    --warning-light: #f59e0b;
+    --danger: #dc2626;
+    --danger-dark: #b91c1c;
+    --danger-light: #ef4444;
+    --neutral: #6b7280;
+    --neutral-dark: #4b5563;
+    --neutral-light: #9ca3af;
+}
+
+/* Common Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn i {
+    font-size: 1.1rem;
+}
+
+/* Button Variants */
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: var(--success-dark);
+}
+
+.btn-warning {
+    background-color: var(--warning);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: var(--warning-dark);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+.btn-neutral {
+    background-color: var(--neutral);
+    color: white;
+}
+
+.btn-neutral:hover {
+    background-color: var(--neutral-dark);
+}
+
+/* Button Sizes */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+}
+
+/* Special Button Styles */
+.btn-outline {
+    background-color: transparent;
+    border: 2px solid currentColor;
+}
+
+.btn-outline.btn-primary {
+    color: var(--primary);
+}
+
+.btn-outline.btn-primary:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-outline.btn-success {
+    color: var(--success);
+}
+
+.btn-outline.btn-success:hover {
+    background-color: var(--success);
+    color: white;
+}
+
+/* Course Action Buttons */
+.course-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.completion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: rgba(5, 150, 105, 0.1);
+    color: var(--success);
+    border-radius: 2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.completion-badge i {
+    font-size: 1rem;
+    color: var(--success);
+}
+
+/* Review Course Button */
+.btn-review-course {
+    background-color: var(--success);
+    color: white;
+    padding: 0.625rem 1.25rem;
+}
+
+.btn-review-course:hover {
+    background-color: var(--success-dark);
+}
+
+.btn-continue-learning {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-continue-learning:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Button Group */
+.btn-group {
+    display: inline-flex;
+    gap: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .course-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+} 

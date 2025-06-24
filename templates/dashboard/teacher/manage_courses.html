@@ -6,157 +6,138 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
-{% block title %}Manage Courses - LearnHub{% endblock %}
+{% block title %}Manage Courses{% endblock %}
+
+{% block header_title %}Manage Courses{% endblock %}
+{% block header_subtitle %}{% endblock %}
+
+{% block header_actions %}{% endblock %}
 
 {% block content %}
-<div class="dashboard-header">
-    <h1>Your Courses</h1>
-    <a href="{{ url_for('add_course') }}" class="btn btn-primary">Add New Course</a>
-</div>
+<div class="courses-container" style="padding: 0 var(--spacing-4);">
+    <!-- Filters and Search -->
+    <div class="card" style="padding: var(--spacing-6); margin-bottom: var(--spacing-8); background-color: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow);">
+        <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <input type="text" 
+                       id="course-search"
+                       class="form-input" 
+                       placeholder="Search Courses..."
+                       oninput="filterCourses()">
+            </div>
+            <div class="form-group" style="width: 200px; margin-bottom: 0;">
+                <select id="category-filter" class="form-input" onchange="filterCourses()">
+                    <option value="all">All Courses</option>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
-<div class="courses-table">
-    <table>
-        <thead>
-            <tr>
-                <th>Course</th>
-                <th>Students</th>
-                <th>Rating</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for course in courses %}
-            <tr>
-                <td>
-                    <div class="course-info-cell">
-                        <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}" alt="{{ course.title }}">
-                        <div>
-                            <h4>{{ course.title }}</h4>
-                            <p>{{ course.category }}</p>
-                        </div>
-                    </div>
-                </td>
-                <td>{{ course.enrollments|length }}</td>
-                <td>
-                    {% set avg_rating = namespace(value=0) %}
-                    {% set review_count = course.reviews|length %}
-                    {% if review_count > 0 %}
-                        {% set total = namespace(value=0) %}
-                        {% for review in course.reviews %}
-                            {% set total.value = total.value + review.rating %}
-                        {% endfor %}
-                        {% set avg_rating.value = total.value / review_count %}
-                    {% endif %}
-                    <div class="rating">
-                        {% for i in range(5) %}
-                            {% if i < avg_rating.value|round %}
-                                ★
-                            {% else %}
-                                ☆
-                            {% endif %}
-                        {% endfor %}
-                        ({{ "%.1f"|format(avg_rating.value) if review_count > 0 else "No ratings" }})
-                    </div>
-                </td>
-                <td>${{ "%.2f"|format(course.price) }}</td>
-                <td>
-                    <span class="status-badge published">Published</span>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <a href="{{ url_for('manage_course_content', course_id=course.course_id) }}" 
-                           class="btn btn-sm btn-content"
-                           title="Manage Content">
-                            <i class="fas fa-list-ol"></i> Content
+    <!-- Course Grid -->
+    <div class="courses-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--spacing-6);">
+        {% for course in courses %}
+        <div class="course-card" 
+             data-title="{{ course.title }}"
+             data-description="{{ course.description }}"
+             data-category="{{ course.status }}"
+             style="background-color: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; position: relative;">
+            <!-- Status Badge -->
+            <div class="status-badge" 
+                 style="position: absolute; 
+                        top: var(--spacing-4); 
+                        right: var(--spacing-4); 
+                        padding: var(--spacing-2) var(--spacing-3); 
+                        border-radius: 20px;
+                        font-size: var(--font-size-sm);
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: var(--spacing-2);
+                        z-index: 1;
+                        {% if course.is_published %}
+                        background-color: rgba(16, 185, 129, 0.1);
+                        color: #10b981;
+                        {% else %}
+                        background-color: rgba(245, 158, 11, 0.1);
+                        color: #f59e0b;
+                        {% endif %}">
+                <i class="fas fa-{{ 'check-circle' if course.is_published else 'clock' }}"></i>
+                {{ 'Published' if course.is_published else 'Draft' }}
+            </div>
+
+            <div style="position: relative;">
+                <img src="{{ url_for('static', filename=course.thumbnail_url) if course.thumbnail_url else url_for('static', filename='images/default-course.jpg') }}"
+                     alt="{{ course.title|title }}"
+                     style="width: 100%; height: 180px; object-fit: cover;">
+            </div>
+            
+            <div style="padding: var(--spacing-6);">
+                <h3 style="font-size: var(--font-size-xl); margin-bottom: var(--spacing-4);">{{ course.title|title }}</h3>
+                <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-4);">
+                    <span style="color: var(--neutral); font-size: var(--font-size-sm);">
+                        <i class="fas fa-users"></i> {{ course.enrolled_students }} Students
+                    </span>
+                    <span style="color: var(--neutral); font-size: var(--font-size-sm);">
+                        <i class="fas fa-dollar-sign"></i> {{ course.price }}
+                    </span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: var(--spacing-3);">
+                    <div style="display: flex; gap: var(--spacing-4);">
+                        <a href="{{ url_for('edit_course', course_id=course.course_id) }}" class="btn btn-neutral" style="flex: 1;">
+                            <i class="fas fa-edit"></i> Edit
                         </a>
-                        <a href="{{ url_for('view_course', course_id=course.course_id) }}" 
-                           class="btn btn-sm btn-view"
-                           title="View Course">
-                            <i class="fas fa-eye"></i>
+                        <a href="{{ url_for('manage_course_content', course_id=course.course_id) }}" class="btn btn-primary" style="flex: 1;">
+                            <i class="fas fa-book-open"></i> Manage Content
                         </a>
                     </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <form method="POST" action="/teacher/courses/{{ course.course_id }}/delete" style="width: 100%;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" style="width: 100%;">
+                            <i class="fas fa-trash"></i> Delete Course
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not courses %}
+    <div style="text-align: center; padding: var(--spacing-8);">
+        <div style="max-width: 400px; margin: 0 auto;">
+            <img src="{{ url_for('static', filename='images/empty-courses.svg') }}" 
+                 alt="No Courses" 
+                 style="width: 200px; margin-bottom: var(--spacing-6);">
+            <h2 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-4);">
+                No Courses Yet
+            </h2>
+            <p style="color: var(--neutral); margin-bottom: var(--spacing-6);">
+                You Haven't Created Any Courses Yet.
+            </p>
+        </div>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
 
-<style>
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
+{% block scripts %}
+<script>
+function filterCourses() {
+    const searchTerm = document.getElementById('course-search').value.toLowerCase();
+    const category = document.getElementById('category-filter').value;
+    
+    document.querySelectorAll('.course-card').forEach(card => {
+        const title = card.dataset.title.toLowerCase();
+        const desc = card.dataset.description.toLowerCase();
+        const cardCategory = card.dataset.category;
+        
+        const matchesSearch = title.includes(searchTerm) || desc.includes(searchTerm);
+        const matchesCategory = category === 'all' || cardCategory === category;
+        
+        card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+    });
 }
-
-.btn-sm {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.85rem;
-}
-
-.btn-content {
-    background-color: #4e73df;
-    color: white;
-    border: none;
-}
-
-.btn-content:hover {
-    background-color: #3a5bc7;
-    color: white;
-}
-
-.btn-view {
-    background-color: #1cc88a;
-    color: white;
-    border: none;
-}
-
-.btn-view:hover {
-    background-color: #17a673;
-    color: white;
-}
-
-.course-info-cell {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.course-info-cell img {
-    width: 60px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.course-info-cell h4 {
-    margin: 0;
-    font-size: 1rem;
-}
-
-.course-info-cell p {
-    margin: 0;
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.status-badge.published {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.rating {
-    color: #ffc107;
-    white-space: nowrap;
-}
-</style>
+</script>
 {% endblock %}

@@ -71,13 +71,6 @@ learnhub2/
 - Students can browse, enroll, and complete courses
 - Both can manage their profiles
 
-## Adapting to MongoDB Atlas
-- Replace SQLAlchemy with Flask-PyMongo or MongoEngine
-- Update all database operations to use MongoDB queries
-- Update authentication to fetch users from MongoDB
-
 ## Contributing
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-## License
-[MIT](LICENSE)

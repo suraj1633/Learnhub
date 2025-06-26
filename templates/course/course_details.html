@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "main/base.html" %}
 
 {% block title %}{{ course.title }}{% endblock %}
 
@@ -40,10 +40,14 @@
                             onclick="enrollCourse('{{ course.id }}')">
                         <i class="fas fa-shopping-cart"></i> Enroll Now
                     </button>
-                    {% else %}
-                    <a href="{{ url_for('view_course_content', course_id=course.id) }}" class="btn btn-success" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);">
+                    {% elif first_content_id %}
+                    <a href="{{ url_for('view_course_content', course_id=course.id, content_id=first_content_id) }}" class="btn btn-success" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);">
                         <i class="fas fa-play-circle"></i> Continue Learning
                     </a>
+                    {% else %}
+                    <button class="btn btn-secondary" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);" disabled>
+                        <i class="fas fa-play-circle"></i> No Content Available
+                    </button>
                     {% endif %}
                 </div>
             </div>
@@ -142,6 +146,59 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Review Section -->
+    <div class="card" style="padding: var(--spacing-6); margin-top: var(--spacing-8);">
+        <h2 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-6);">
+            Student Reviews
+        </h2>
+        {% if current_user.is_authenticated and current_user.user_type == 'student' and course.is_enrolled %}
+            <form action="{{ url_for('add_review', course_id=course.course_id) }}" method="POST" style="margin-bottom: var(--spacing-6);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="margin-bottom: var(--spacing-4);">
+                    <label for="rating" style="font-weight: bold;">Your Rating:</label>
+                    <select name="rating" id="rating" required style="margin-left: 1rem;">
+                        <option value="">Select</option>
+                        {% for i in range(1,6) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: var(--spacing-4);">
+                    <label for="comment" style="font-weight: bold;">Your Review:</label>
+                    <textarea name="comment" id="comment" rows="3" style="width: 100%; margin-top: 0.5rem;" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+        {% elif not current_user.is_authenticated %}
+            <p><a href="{{ url_for('login') }}">Login</a> to write a review.</p>
+        {% elif current_user.user_type != 'student' %}
+            <p>Only students can write reviews.</p>
+        {% elif not course.is_enrolled %}
+            <p>You must be enrolled to write a review.</p>
+        {% endif %}
+
+        <!-- List of Reviews -->
+        {% if course.reviews %}
+            {% for review in course.reviews %}
+                <div class="review-item" style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <img src="{{ url_for('static', filename=review.author.profile_pic) if review.author and review.author.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="author" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <strong>{{ review.author.username if review.author else 'Student' }}</strong>
+                            <span style="margin-left: 1rem; color: #fbbf24;">
+                                {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                {% for i in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 0.5rem;">{{ review.comment }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No reviews for this course yet.</p>
+        {% endif %}
     </div>
 </div>
 

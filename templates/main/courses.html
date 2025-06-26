@@ -38,7 +38,7 @@
                     <div class="course-meta-top">
                         <span class="course-category"><i class="fas fa-tag"></i> {{ course.category }}</span>
                         <span class="course-rating">
-                            <i class="fas fa-star"></i> {{ '%.1f'|format(course.reviews|map(attribute='rating')|list|avg|default(0, true)) }}
+                            <i class="fas fa-star"></i> {{ '%.1f'|format(course.avg_rating|default(0, true)) }}
                             <span class="course-reviews">({{ course.reviews_list|length }})</span>
                         </span>
                     </div>

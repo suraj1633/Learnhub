@@ -79,7 +79,7 @@
                         {% endfor %}
                         <div class="rating-details" style="margin-top: 5px; font-size: 0.9em;">
                             <span style="color: #FFD700; font-size: 1.2em; font-weight: 500;">{{ "%.1f"|format(rating) }}</span>
-                            <span style="color: #FFFFFF; margin-left: 10px;">({{ course.reviews.count() }} reviews)</span>
+                            <span style="color: #FFFFFF; margin-left: 10px;">({{ course.reviews|length }} reviews)</span>
                         </div>
                     </div>
                     <p class="price">${{ "%.2f"|format(course.price) }}</p>
@@ -331,10 +331,18 @@ function openDeleteModal(courseId, courseTitle) {
     const modal = document.getElementById('deleteModal');
     const courseTitleSpan = document.getElementById('courseTitle');
     const deleteForm = document.getElementById('deleteCourseForm');
-    
+    const csrfInput = deleteForm.querySelector('input[name="csrf_token"]');
+
     courseTitleSpan.textContent = courseTitle;
     deleteForm.action = `/teacher/courses/${courseId}/delete`;
-    modal.style.display = 'block';
+
+    // Fetch a fresh CSRF token
+    fetch('/get-csrf')
+        .then(response => response.json())
+        .then(data => {
+            csrfInput.value = data.csrf_token;
+            modal.style.display = 'block';
+        });
 }
 
 function closeDeleteModal() {
@@ -348,6 +356,21 @@ window.onclick = function(event) {
     if (event.target == modal) {
         closeDeleteModal();
     }
+}
+
+// Always fetch a fresh CSRF token right before submitting the delete form
+const deleteCourseForm = document.getElementById('deleteCourseForm');
+if (deleteCourseForm) {
+    deleteCourseForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        fetch('/get-csrf')
+            .then(response => response.json())
+            .then(data => {
+                form.querySelector('input[name="csrf_token"]').value = data.csrf_token;
+                form.submit();
+            });
+    });
 }
 </script>
 {% endblock %}

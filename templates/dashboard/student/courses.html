@@ -11,7 +11,7 @@
 <div class="courses-container">
     <!-- Header -->
     <div class="courses-header">
-        <h1>My Learning</h1>
+        <h1 style="color: white;">My Learning</h1>
         <p style="color: var(--dark); font-size: 1rem; margin-top: 0.5rem;">All your enrolled courses in one place.</p>
     </div>
 
@@ -48,11 +48,15 @@
                 </div>
                 <div class="course-info">
                     <h3 style="color: var(--white); font-size: 1.18rem; font-weight: 800; letter-spacing: 0.01em; font-family: 'Inter', sans-serif; text-shadow: 0 2px 8px rgba(0,0,0,0.18);">{{ course.title }}</h3>
+                    <div class="course-rating" style="margin: 0.3rem 0 0.7rem 0; color: #fbbf24; font-size: 1rem;">
+                        <i class="fas fa-star"></i> {{ '%.1f'|format(course.avg_rating|default(0, true)) }}
+                        <span style="color: #fff; font-size: 0.95rem;">({{ course.reviews_list|length }} reviews)</span>
+                    </div>
                     <p class="instructor" style="color: var(--primary-light); font-size: 0.95rem; font-weight: 500; font-family: 'Inter', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.10);">By {{ course.teacher.username }}</p>
                     <div class="progress-bar-section" style="margin: 1rem 0 0.7rem 0;">
-                        <div class="progress-label" style="color: var(--primary-light); font-size: 0.98rem; font-weight: 600; font-family: 'Inter', sans-serif; margin-bottom: 0.3rem;">Progress: {{ enrollment.progress }}%</div>
+                        <div class="progress-label" style="color: var(--primary-light); font-size: 0.98rem; font-weight: 600; font-family: 'Inter', sans-serif; margin-bottom: 0.3rem;">Progress: {{ enrollment.progress | default(0, true) }}%</div>
                         <div class="progress-bar-outer">
-                            <div class="progress-bar-inner" style="width: {{ enrollment.progress }}%"></div>
+                            <div class="progress-bar-inner" style="width: {{ enrollment.progress | default(0, true) }}%"></div>
                         </div>
                     </div>
                     <div class="course-actions">

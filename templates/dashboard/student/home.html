@@ -46,6 +46,7 @@
     </div>
 
     <!-- Course Cards -->
+    <h2 style="font-size: var(--font-size-2xl); color: var(--neutral-dark); margin-bottom: var(--spacing-4); margin-top: var(--spacing-8);">Enrolled Courses</h2>
     <div class="courses-container">
         {% for enrollment in enrollments %}
             <div class="course-card">
@@ -62,7 +63,18 @@
                 </div>
                 <div class="course-info">
                     <h3>{{ enrollment[1].title|title }}</h3>
-                    <p class="instructor">By {{ enrollment[2].first_name or enrollment[2].username }}</p>
+                    <p class="instructor">
+                      By
+                      {% if enrollment[2] %}
+                        {% if enrollment[2].first_name or enrollment[2].last_name %}
+                          {{ enrollment[2].first_name|default('', true) }} {{ enrollment[2].last_name|default('', true) }}
+                        {% else %}
+                          {{ enrollment[2].username }}
+                        {% endif %}
+                      {% else %}
+                        Unknown Teacher
+                      {% endif %}
+                    </p>
                     <div class="course-ratings">
                         <div class="stars">
                             {% set reviews = course_reviews[enrollment[1].course_id] %}
@@ -76,11 +88,11 @@
                             {% endif %}
                             {% for i in range(5) %}
                                 {% if rating >= i + 1 %}
-                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star" style="color: yellow;"></i>
                                 {% elif rating > i %}
-                                    <i class="fas fa-star-half-alt"></i>
+                                    <i class="fas fa-star-half-alt" style="color: yellow;"></i>
                                 {% else %}
-                                    <i class="far fa-star"></i>
+                                    <i class="far fa-star" style="color: yellow;"></i>
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -88,10 +100,10 @@
                         <span class="rating-count">({{ reviews|length }} reviews)</span>
                     </div>
                     <div class="course-stats">
-                        <span><i class="fas fa-book-open"></i> {{ enrollment[0].progress }}% Complete</span>
+                        <span><i class="fas fa-book-open"></i> {{ enrollment[0].progress | default(0, true) }}% Complete</span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: {{ enrollment[0].progress }}%"></div>
+                        <div class="progress-bar" style="width: {{ enrollment[0].progress | default(0, true) }}%"></div>
                     </div>
                 </div>
             </div>
@@ -103,6 +115,11 @@
                 <a href="{{ url_for('courses') }}" class="btn btn-primary">Browse Courses</a>
             </div>
         {% endfor %}
+    </div>
+    <div style="text-align: center; margin-top: var(--spacing-8);">
+        <a href="{{ url_for('courses') }}" class="btn btn-primary">
+            <i class="fas fa-compass"></i> Explore Courses
+        </a>
     </div>
 </div>
 

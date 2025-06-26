@@ -215,7 +215,7 @@
 
 {% block content %}
 <section class="teacher-profile-hero">
-    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.jpg') }}" alt="{{ teacher.username }} profile picture">
+    <img src="{{ url_for('static', filename=teacher.profile_pic) if teacher.profile_pic else url_for('static', filename='images/default-profile.svg') }}" alt="{{ teacher.username }} profile picture">
     <h1>{{ teacher.first_name }} {{ teacher.last_name }}</h1>
     <div class="teacher-username">@{{ teacher.username }}</div>
     <div class="teacher-bio">{{ teacher.bio }}</div>
@@ -254,7 +254,7 @@
                 <div class="teacher-course-title">{{ course.title }}</div>
                 <div class="teacher-course-meta">
                     <span><i class="fas fa-users"></i> {{ course.enrollments|length }}</span>
-                    <span><i class="fas fa-star"></i> {{ '%.1f'|format(course.reviews|map(attribute='rating')|list|avg|default(0, true)) }}</span>
+                    <span><i class="fas fa-star"></i> {{ '%.1f'|format(course.avg_rating|default(0, true)) }} ({{ course.reviews_list|length }})</span>
                     <span><i class="fas fa-tag"></i> {{ course.category }}</span>
                 </div>
                 <a href="{{ url_for('view_course', course_id=course.course_id) }}" class="teacher-course-link">View Course</a>

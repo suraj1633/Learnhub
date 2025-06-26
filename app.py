@@ -1,12 +1,10 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, make_response, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import os
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import traceback
-from sqlalchemy import select, func
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_jwt_extended import (
     JWTManager,
@@ -18,180 +16,80 @@ from flask_jwt_extended import (
 from utils.text_utils import capitalize_first, capitalize_name
 from routes.teacher_forms import teacher_forms_bp
 from functools import wraps
-from sqlalchemy.orm import joinedload
+from utils.mongo_utils import db
+from bson.objectid import ObjectId
+from pymongo.errors import ServerSelectionTimeoutError
+import secrets
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 
 # Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24).hex())
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', os.urandom(24).hex())
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_COOKIE_SECURE'] = False
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_CSRF_CHECK_FORM'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:Suraj*12@localhost/learnhub')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Initialize extensions
 jwt = JWTManager(app)
-db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Ensure upload directories exist
 os.makedirs(os.path.join('static', 'images', 'profile_pics'), exist_ok=True)
 os.makedirs(os.path.join('static', 'images', 'course_thumbnails'), exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Database Models
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    user_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    user_type = db.Column(db.String(20), nullable=False)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    bio = db.Column(db.Text)
-    profile_pic = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    courses_teaching = db.relationship('Course', back_populates='teacher', foreign_keys='Course.teacher_id')
-    enrollments = db.relationship('Enrollment', back_populates='student', foreign_keys='Enrollment.student_id')
-    reviews = db.relationship('Review', backref='author', foreign_keys='Review.student_id')
-    testimonials = db.relationship('Testimonial', backref='author', foreign_keys='Testimonial.user_id')
-
+# Custom User class for Flask-Login
+class UserObj(UserMixin):
+    def __init__(self, user_doc):
+        self.user_doc = user_doc
+        self.id = str(user_doc.get('_id'))
+        self.user_id = user_doc.get('user_id', self.id)
+        self.username = user_doc.get('username')
+        self.email = user_doc.get('email')
+        self.password_hash = user_doc.get('password_hash')
+        self.user_type = user_doc.get('user_type')
+        self.first_name = user_doc.get('first_name')
+        self.last_name = user_doc.get('last_name')
+        self.bio = user_doc.get('bio')
+        self.profile_pic = user_doc.get('profile_pic')
+        self.created_at = user_doc.get('created_at')
     def get_id(self):
-        return str(self.user_id)
-
-class Course(db.Model):
-    __tablename__ = 'courses'
-    course_id = db.Column(db.Integer, primary_key=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    thumbnail_url = db.Column(db.String(255))
-    trailer_url = db.Column(db.String(255))
-    category = db.Column(db.String(50))
-    is_published = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    teacher = db.relationship('User', back_populates='courses_teaching', foreign_keys=[teacher_id])
-    reviews = db.relationship('Review', backref='course', lazy='dynamic')
-    enrollments = db.relationship('Enrollment', back_populates='course', lazy=True)
-    content = db.relationship('CourseContent', backref='course', order_by='CourseContent.position', lazy=True)
-
-class Enrollment(db.Model):
-    __tablename__ = 'enrollments'
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.course_id'), nullable=False)
-    progress = db.Column(db.Integer, default=0)
-    completed = db.Column(db.Boolean, default=False)
-    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
-    student = db.relationship('User', back_populates='enrollments', foreign_keys=[student_id])
-    course = db.relationship('Course', back_populates='enrollments')
-
-class Review(db.Model):
-    __tablename__ = 'reviews'
-    review_id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.course_id'), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class CourseContent(db.Model):
-    __tablename__ = 'course_content'
-    content_id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.course_id'), nullable=False)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text)
-    content_type = db.Column(db.String(20), nullable=False)
-    url = db.Column(db.String(255))
-    position = db.Column(db.Integer, nullable=False)
-
-class UserVideoProgress(db.Model):
-    __tablename__ = 'user_video_progress'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    content_id = db.Column(db.Integer, db.ForeignKey('course_content.content_id'), nullable=False)
-    completed = db.Column(db.Boolean, default=False)
-    progress = db.Column(db.Integer, default=0)  # Store progress as percentage
-    last_watched = db.Column(db.DateTime, default=datetime.utcnow)
-    user = db.relationship('User', backref='video_progress')
-    content = db.relationship('CourseContent', backref='progress_records')
-
-    def __init__(self, user_id, content_id, completed=False, progress=0):
-        self.user_id = user_id
-        self.content_id = content_id
-        self.completed = completed
-        self.progress = progress
-        self.last_watched = datetime.utcnow()
-
-class Testimonial(db.Model):
-    __tablename__ = 'testimonials'
-    testimonial_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        return str(self.id)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    user = db['users'].find_one({'_id': ObjectId(user_id)})
+    if user:
+        return UserObj(user)
+    return None
 
 @app.after_request
 def inject_csrf_token(response):
     response.set_cookie('csrf_token', generate_csrf())
     return response
 
-# Main routes
 @app.route('/')
 def home():
-    # Get featured courses (courses with highest ratings and most enrollments)
-    featured_courses = db.session.execute(
-        select(Course)
-        .outerjoin(Enrollment, Course.course_id == Enrollment.course_id)
-        .outerjoin(Review, Course.course_id == Review.course_id)
-        .group_by(Course.course_id)
-        .options(
-            joinedload(Course.teacher),
-            joinedload(Course.enrollments),
-            joinedload(Course.content)
-        )
-        .order_by(
-            func.coalesce(func.avg(Review.rating), 0).desc(),
-            func.count(Enrollment.id).desc()
-        )
-        .limit(6)
-    ).scalars().unique().all()
-
-    # Load reviews for each course
-    for course in featured_courses:
-        course.reviews = course.reviews.all()
-
-    # Get testimonials from students
-    testimonials = db.session.execute(
-        select(Review)
-        .join(User, Review.student_id == User.user_id)
-        .join(Course, Review.course_id == Course.course_id)
-        .where(Review.rating >= 4)  # Only show positive reviews
-        .order_by(func.random())  # Randomly select testimonials
-        .options(
-            joinedload(Review.author),
-            joinedload(Review.course)
-        )
-        .limit(3)
-    ).scalars().unique().all()
-
-    return render_template('main/home.html',
-                         featured_courses=featured_courses,
-                         testimonials=testimonials)
+    # Featured courses: highest ratings and most enrollments
+    courses = list(db['courses'].find({'is_published': True}))
+    for course in courses:
+        course['teacher'] = db['users'].find_one({'user_id': course['teacher_id']})
+        course['enrollments'] = list(db['enrollments'].find({'course_id': course['course_id']}))
+        course['reviews'] = list(db['reviews'].find({'course_id': course['course_id']}))
+        course['avg_rating'] = (sum(r['rating'] for r in course['reviews']) / len(course['reviews'])) if course['reviews'] else 0
+    # Sort by avg_rating and enrollments
+    featured_courses = sorted(courses, key=lambda c: (-c['avg_rating'], -len(c['enrollments'])))[:6]
+    testimonials = list(db['reviews'].find({'rating': {'$gte': 4}}))
+    for t in testimonials:
+        t['author'] = db['users'].find_one({'user_id': t['student_id']})
+        t['course'] = db['courses'].find_one({'course_id': t['course_id']})
+    return render_template('main/home.html', featured_courses=featured_courses, testimonials=testimonials[:3])
 
 @app.route('/about')
 def about():
@@ -207,67 +105,74 @@ def get_csrf():
 
 @app.route('/courses')
 def courses():
-    courses = db.session.execute(select(Course).join(User)).scalars().all()
+    courses = list(db['courses'].find())
     for course in courses:
-        course.reviews_list = course.reviews.all()
+        course['course_id'] = course.get('course_id', str(course.get('_id')))
+        course['reviews_list'] = list(db['reviews'].find({'course_id': course['course_id']}))
+        # Add teacher info for template
+        course['teacher'] = db['users'].find_one({'user_id': course['teacher_id']})
+        # Add avg_rating for template
+        if course['reviews_list']:
+            course['avg_rating'] = sum(r['rating'] for r in course['reviews_list']) / len(course['reviews_list'])
+        else:
+            course['avg_rating'] = 0
     return render_template('main/courses.html', courses=courses)
 
 @app.route('/teachers')
 def teachers():
-    teachers = db.session.execute(
-        select(User)
-        .where(User.user_type == 'teacher')
-        .order_by(User.created_at.desc())
-    ).scalars().all()
+    teachers = list(db['users'].find({'user_type': 'teacher'}))
+    for teacher in teachers:
+        # Ensure user_id is present (fallback to _id if missing)
+        teacher['user_id'] = teacher.get('user_id', str(teacher.get('_id')))
+        # Add courses_teaching for template
+        teacher['courses_teaching'] = list(db['courses'].find({'teacher_id': teacher['user_id']}))
+        # For each course, add enrollments as a list for template
+        for course in teacher['courses_teaching']:
+            course['course_id'] = course.get('course_id', str(course.get('_id')))
+            course['enrollments'] = list(db['enrollments'].find({'course_id': course['course_id']}))
     return render_template('main/teachers.html', teachers=teachers)
 
 @app.route('/testimonials')
 def testimonials():
-    testimonials = db.session.execute(
-        select(Review)
-        .join(User)
-        .where(Review.rating >= 4)  # Only show positive testimonials
-        .order_by(Review.created_at.desc())
-        .limit(6)
-    ).scalars().all()
+    testimonials = list(db['reviews'].find({'rating': {'$gte': 4}}).sort('created_at', -1).limit(6))
     return render_template('main/testimonials.html', testimonials=testimonials)
 
-@app.route('/teachers/<int:teacher_id>')
+@app.route('/teachers/<teacher_id>')
 def public_teacher_profile(teacher_id):
-    teacher = db.session.get(User, teacher_id)
-    if not teacher or teacher.user_type != 'teacher':
+    # teacher_id is now a string, can be user_id or str(_id)
+    teacher = db['users'].find_one({'user_id': teacher_id, 'user_type': 'teacher'})
+    if not teacher:
+        # fallback to _id if user_id not found
+        try:
+            teacher = db['users'].find_one({'_id': ObjectId(teacher_id), 'user_type': 'teacher'})
+        except Exception:
+            teacher = None
+    if not teacher:
         abort(404)
-    courses = db.session.execute(
-        select(Course).where(Course.teacher_id == teacher_id)
-    ).scalars().all()
-    total_students = sum(len(course.enrollments) for course in courses)
-    total_reviews = sum(course.reviews.count() for course in courses)
-    avg_rating = 0
-    all_ratings = []
-    for course in courses:
-        all_ratings += [review.rating for review in course.reviews]
-    if all_ratings:
-        avg_rating = round(sum(all_ratings) / len(all_ratings), 1)
-    return render_template('main/teacher_profile.html',
-        teacher=teacher,
-        courses=courses,
-        total_students=total_students,
-        total_reviews=total_reviews,
-        avg_rating=avg_rating
-    )
+    courses = list(db['courses'].find({'teacher_id': teacher.get('user_id', str(teacher.get('_id')))}))
+    for c in courses:
+        c['course_id'] = c.get('course_id', str(c.get('_id')))
+        c['reviews_list'] = list(db['reviews'].find({'course_id': c['course_id']}))
+        if c['reviews_list']:
+            c['avg_rating'] = sum(r['rating'] for r in c['reviews_list']) / len(c['reviews_list'])
+        else:
+            c['avg_rating'] = 0
+    total_students = sum(db['enrollments'].count_documents({'course_id': c['course_id']}) for c in courses)
+    all_reviews = [r for c in courses for r in db['reviews'].find({'course_id': c['course_id']})]
+    total_reviews = len(all_reviews)
+    avg_rating = round(sum(r.get('rating', 0) for r in all_reviews) / total_reviews, 1) if total_reviews else 0
+    return render_template('main/teacher_profile.html', teacher=teacher, courses=courses, total_students=total_students, total_reviews=total_reviews, avg_rating=avg_rating)
 
-# Auth routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        user = db.session.execute(select(User).where(User.email == email)).scalar_one_or_none()
-        
-        if user and check_password_hash(user.password_hash, password):
-            login_user(user)
-            access_token = create_access_token(identity=str(user.user_id))
-            response = make_response(redirect(url_for('student_dashboard' if user.user_type == 'student' else 'teacher_dashboard')))
+        user = db['users'].find_one({'email': email})
+        if user and check_password_hash(user['password_hash'], password):
+            login_user(UserObj(user))
+            access_token = create_access_token(identity=str(user.get('_id')))
+            response = make_response(redirect(url_for('student_dashboard' if user['user_type'] == 'student' else 'teacher_dashboard')))
             set_access_cookies(response, access_token)
             return response
         flash('Invalid email or password', 'danger')
@@ -288,42 +193,33 @@ def register():
             username = request.form.get('username')
             email = request.form.get('email')
             password = request.form.get('password')
-            confirm_password = request.form.get('confirm_password')  # Added this line
+            confirm_password = request.form.get('confirm_password')
             user_type = request.form.get('user_type')
-            
-            # Add password confirmation check
             if password != confirm_password:
                 flash('Passwords do not match', 'danger')
                 return redirect(url_for('register'))
-            
             if not all([username, email, password, user_type]):
                 flash('All fields are required', 'danger')
                 return redirect(url_for('register'))
-            
-            existing_user = db.session.execute(
-                select(User).where((User.username == username) | (User.email == email))
-            ).first()
-            
+            existing_user = db['users'].find_one({'$or': [{'username': username}, {'email': email}]})
             if existing_user:
                 flash('Username or email already exists', 'danger')
                 return redirect(url_for('register'))
-            
-            new_user = User(
-                username=username,
-                email=email,
-                password_hash=generate_password_hash(password),
-                user_type=user_type
-            )
-            db.session.add(new_user)
-            db.session.commit()
+            user_doc = {
+                'username': username,
+                'email': email,
+                'password_hash': generate_password_hash(password),
+                'user_type': user_type,
+                'created_at': datetime.utcnow()
+            }
+            db['users'].insert_one(user_doc)
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
         except Exception as e:
-            db.session.rollback()
             print(f"Error during registration: {str(e)}")
             print(traceback.format_exc())
             flash('Registration failed. Please try again.', 'danger')
-    return render_template('auth/register.html') 
+    return render_template('auth/register.html')
 
 # Student dashboard routes
 @app.route('/student/dashboard')
@@ -333,25 +229,50 @@ def student_dashboard():
         return redirect(url_for('home'))
     
     # Get enrolled courses with course and teacher information
-    enrollments = db.session.execute(
-        select(Enrollment, Course, User)
-        .join(Course, Enrollment.course_id == Course.course_id)
-        .join(User, Course.teacher_id == User.user_id)
-        .where(Enrollment.student_id == current_user.user_id)
-    ).all()
-    
+    enrollments_cursor = db['enrollments'].find({'student_id': current_user.user_id})
+    enrollments = list(enrollments_cursor)
+
+    # Build list of (enrollment, course, teacher) tuples
+    enrollment_tuples = []
+    for enrollment in enrollments:
+        course = db['courses'].find_one({'course_id': enrollment['course_id']})
+        if not course:
+            try:
+                course = db['courses'].find_one({'_id': ObjectId(enrollment['course_id'])})
+            except Exception:
+                course = None
+        teacher = db['users'].find_one({'user_id': course['teacher_id']}) if course else None
+        if course:
+            # Enrich course dict for template
+            course['course_id'] = course.get('course_id', str(course.get('_id')))
+            course['thumbnail_url'] = course.get('thumbnail_url', None)
+            course['teacher'] = teacher
+            course['title'] = course.get('title', '')
+            course['category'] = course.get('category', '')
+            course['price'] = course.get('price', 0)
+        enrollment_tuples.append((enrollment, course, teacher))
+
     # Calculate completed courses
-    completed_courses = sum(1 for enrollment, _, _ in enrollments if enrollment.completed)
-    
+    completed_courses = sum(1 for e in enrollments if e.get('completed'))
+
     # Get reviews for each course
     course_reviews = {}
-    for enrollment, course, _ in enrollments:
-        # Execute the reviews query since it's a dynamic relationship
-        reviews = course.reviews.all()
-        course_reviews[course.course_id] = reviews
-    
+    for enrollment in enrollments:
+        course_id = enrollment['course_id']
+        course_reviews[course_id] = list(db['reviews'].find({'course_id': course_id}))
+
+    # Add avg_rating to each course in enrollment_tuples
+    for _, course, _ in enrollment_tuples:
+        if course:
+            reviews = course_reviews.get(course['course_id'], [])
+            course['reviews_list'] = reviews
+            if reviews:
+                course['avg_rating'] = sum(r['rating'] for r in reviews) / len(reviews)
+            else:
+                course['avg_rating'] = 0
+
     return render_template('dashboard/student/home.html', 
-                         enrollments=enrollments,
+                         enrollments=enrollment_tuples,
                          completed_courses=completed_courses,
                          course_reviews=course_reviews)
 
@@ -360,11 +281,23 @@ def student_dashboard():
 def student_courses():
     if current_user.user_type != 'student':
         return redirect(url_for('home'))
-    enrolled_courses = db.session.execute(
-        select(Course, Enrollment)
-        .join(Enrollment, Course.course_id == Enrollment.course_id)
-        .where(Enrollment.student_id == current_user.user_id)
-    ).all()
+    enrollments = list(db['enrollments'].find({'student_id': current_user.user_id}))
+    enrolled_courses = []
+    for enrollment in enrollments:
+        course = db['courses'].find_one({'course_id': enrollment.get('course_id')})
+        if not course:
+            course = db['courses'].find_one({'_id': ObjectId(enrollment.get('course_id'))})
+        if course:
+            # Add teacher info for template
+            course['teacher'] = db['users'].find_one({'user_id': course['teacher_id']})
+            course['course_id'] = course.get('course_id', str(course.get('_id')))
+            reviews = list(db['reviews'].find({'course_id': course['course_id']}))
+            course['reviews_list'] = reviews
+            if reviews:
+                course['avg_rating'] = sum(r['rating'] for r in reviews) / len(reviews)
+            else:
+                course['avg_rating'] = 0
+            enrolled_courses.append((course, enrollment))
     return render_template('dashboard/student/courses.html', enrolled_courses=enrolled_courses)
 
 @app.route('/student/profile', methods=['GET', 'POST'])
@@ -407,23 +340,27 @@ def student_profile():
                 
                 current_user.password_hash = generate_password_hash(new_password)
             
-            db.session.commit()
+            db['users'].update_one({'_id': ObjectId(current_user.user_id)}, {'$set': {
+                'first_name': current_user.first_name,
+                'last_name': current_user.last_name,
+                'bio': current_user.bio,
+                'profile_pic': current_user.profile_pic,
+                'password_hash': current_user.password_hash
+            }})
             flash('Profile updated successfully!', 'success')
             return redirect(url_for('student_profile'))
         except Exception as e:
-            db.session.rollback()
             flash('Failed to update profile', 'danger')
             print(f"Error updating profile: {str(e)}")
     
     # Get student's statistics
-    enrollments = db.session.execute(
-        select(Enrollment).where(Enrollment.student_id == current_user.user_id)
-    ).scalars().all()
-    
+    enrollments_cursor = db['enrollments'].find({'student_id': current_user.user_id})
+    enrollments = list(enrollments_cursor)
+
     total_courses = len(enrollments)
-    completed_courses = sum(1 for e in enrollments if e.progress == 100)
+    completed_courses = sum(1 for e in enrollments if e.get('progress', 0) == 100)
     in_progress_courses = total_courses - completed_courses
-    avg_progress = sum(e.progress for e in enrollments) / total_courses if total_courses > 0 else 0
+    avg_progress = sum(e.get('progress', 0) for e in enrollments) / total_courses if total_courses > 0 else 0
     
     return render_template('dashboard/student/profile.html',
         stats={
@@ -442,9 +379,11 @@ def teacher_dashboard():
         return redirect(url_for('home'))
     
     # Get all courses by this teacher
-    courses = db.session.execute(
-        select(Course).where(Course.teacher_id == current_user.user_id)
-    ).scalars().all()
+    courses_cursor = db['courses'].find({'teacher_id': current_user.user_id})
+    courses = list(courses_cursor)
+    
+    for course in courses:
+        course['course_id'] = course.get('course_id', str(course.get('_id')))
     
     # Calculate total students, earnings, and ratings for each course
     total_students = 0
@@ -452,25 +391,22 @@ def teacher_dashboard():
     
     for course in courses:
         # Get enrollments for this course
-        enrollments = db.session.execute(
-            select(Enrollment).where(Enrollment.course_id == course.course_id)
-        ).scalars().all()
+        enrollments = db['enrollments'].find({'course_id': course['course_id']})
         
         # Get reviews and calculate average rating for this course
-        reviews = db.session.execute(
-            select(Review).where(Review.course_id == course.course_id)
-        ).scalars().all()
+        reviews_cursor = db['reviews'].find({'course_id': course['course_id']})
+        reviews = list(reviews_cursor)
         
         # Calculate average rating
         if reviews:
-            total_rating = sum(review.rating for review in reviews)
-            course.average_rating = total_rating / len(reviews)
+            total_rating = sum(r['rating'] for r in reviews)
+            course['average_rating'] = total_rating / len(reviews)
         else:
-            course.average_rating = 0
-            
-        course.reviews = reviews
-        total_students += len(enrollments)
-        total_earnings += course.price * len(enrollments)
+            course['average_rating'] = 0
+        
+        course['reviews'] = reviews
+        total_students += len(list(enrollments))
+        total_earnings += course['price'] * len(list(enrollments))
     
     stats = {
         'total_courses': len(courses),
@@ -486,7 +422,12 @@ def teacher_dashboard():
 def manage_courses():
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
-    courses = Course.query.filter_by(teacher_id=current_user.user_id).all()
+    courses = list(db['courses'].find({'teacher_id': current_user.user_id}))
+    for course in courses:
+        # Ensure course_id is present (fallback to _id if missing)
+        course['course_id'] = course.get('course_id', str(course.get('_id')))
+        # Optionally, add enrolled_students for template
+        course['enrolled_students'] = db['enrollments'].count_documents({'course_id': course['course_id']})
     return render_template('dashboard/teacher/manage_courses.html', courses=courses)
 
 @app.route('/teacher/create_course', methods=['GET', 'POST'])
@@ -504,27 +445,27 @@ def create_course():
             # Capitalize the first letter of the title
             title = capitalize_first(title)
             
-            course = Course(
-                teacher_id=current_user.user_id,
-                title=title,
-                description=description,
-                price=price,
-                category=category
-            )
+            course_doc = {
+                'teacher_id': current_user.user_id,
+                'title': title,
+                'description': description,
+                'price': price,
+                'category': category,
+                'is_published': False,
+                'created_at': datetime.utcnow()
+            }
             
             if 'thumbnail' in request.files:
                 file = request.files['thumbnail']
                 if file and allowed_file(file.filename):
                     filename = secure_filename(f"course_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
                     file.save(os.path.join('static', 'images', 'course_thumbnails', filename))
-                    course.thumbnail_url = f"images/course_thumbnails/{filename}"
+                    course_doc['thumbnail_url'] = f"images/course_thumbnails/{filename}"
             
-            db.session.add(course)
-            db.session.commit()
+            db['courses'].insert_one(course_doc)
             flash('Course created successfully!', 'success')
             return redirect(url_for('manage_courses'))
         except Exception as e:
-            db.session.rollback()
             flash('Failed to create course.', 'danger')
             print(f"Error creating course: {str(e)}")
     
@@ -535,8 +476,8 @@ def create_course():
 def course_content(course_id):
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
-    course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.user_id:
+    course = db['courses'].find_one({'course_id': course_id})
+    if course['teacher_id'] != current_user.user_id:
         abort(403)
     return render_template('dashboard/teacher/course_content.html', course=course)
 
@@ -548,268 +489,183 @@ def teacher_settings():
     return render_template('dashboard/teacher/settings.html')
 
 # Course routes
-@app.route('/course/<int:course_id>')
+@app.route('/course/<course_id>')
 def view_course(course_id):
-    course = db.session.get(Course, course_id)
+    # Try to find by int course_id, then fallback to _id
+    course = db['courses'].find_one({'course_id': course_id})
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
     if not course:
         abort(404)
-    
-    content = db.session.execute(
-        select(CourseContent).where(CourseContent.course_id == course_id).order_by(CourseContent.position)
-    ).scalars().all()
-    
-    reviews = db.session.execute(
-        select(Review).join(User).where(Review.course_id == course_id).order_by(Review.created_at.desc())
-    ).scalars().all()
-    
-    avg_rating = db.session.execute(
-        select(func.avg(Review.rating)).where(Review.course_id == course_id)
-    ).scalar() or 0
-    
-    enrollment = None
+    # Add instructor info
+    course['instructor'] = db['users'].find_one({'user_id': course['teacher_id']})
+    # Add is_enrolled for current user
+    is_enrolled = False
     if current_user.is_authenticated and current_user.user_type == 'student':
-        enrollment = db.session.execute(
-            select(Enrollment)
-            .where(Enrollment.student_id == current_user.user_id)
-            .where(Enrollment.course_id == course_id)
-        ).scalar_one_or_none()
-    
-    return render_template('main/course_detail.html',
-        course=course,
-        content=content,
-        reviews=reviews,
-        avg_rating=round(avg_rating, 1),
-        enrollment=enrollment
-    )
+        is_enrolled = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course.get('course_id', str(course.get('_id')))} ) is not None
+    course['is_enrolled'] = is_enrolled
+    # Fetch reviews and attach author info
+    reviews = list(db['reviews'].find({'course_id': course.get('course_id', str(course.get('_id')))}))
+    for review in reviews:
+        review['author'] = db['users'].find_one({'user_id': review['student_id']})
+    course['reviews'] = reviews
+    # Calculate avg_rating
+    if reviews:
+        course['avg_rating'] = sum(r['rating'] for r in reviews) / len(reviews)
+    else:
+        course['avg_rating'] = 0
+    # Fetch first content_id for Continue Learning button
+    first_content = db['course_content'].find_one({'course_id': course.get('course_id', str(course.get('_id')))}, sort=[('position', 1)])
+    first_content_id = first_content['content_id'] if first_content else None
+    return render_template('course/course_details.html', course=course, first_content_id=first_content_id)
 
-@app.route('/course/<int:course_id>/enroll', methods=['POST'])
+@app.route('/course/<course_id>/enroll', methods=['POST'])
 @login_required
 def enroll_course(course_id):
     if current_user.user_type != 'student':
         flash('Only students can enroll in courses', 'danger')
         return redirect(url_for('view_course', course_id=course_id))
     
-    existing = db.session.execute(
-        select(Enrollment)
-        .where(Enrollment.student_id == current_user.user_id)
-        .where(Enrollment.course_id == course_id)
-    ).scalar_one_or_none()
+    # Try to find by int course_id, then fallback to string
+    lookup_id = course_id
+    try:
+        lookup_id = int(course_id)
+    except (ValueError, TypeError):
+        pass
+    existing = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': lookup_id})
     
     if existing:
         flash('You are already enrolled in this course', 'info')
         return redirect(url_for('view_course', course_id=course_id))
     
     try:
-        db.session.add(Enrollment(
-            student_id=current_user.user_id,
-            course_id=course_id
-        ))
-        db.session.commit()
+        db['enrollments'].insert_one({
+            'student_id': current_user.user_id,
+            'course_id': lookup_id
+        })
         flash('Successfully enrolled in the course!', 'success')
     except Exception as e:
-        db.session.rollback()
         flash('Failed to enroll in the course', 'danger')
         print(f"Error enrolling in course: {str(e)}")
     return redirect(url_for('view_course', course_id=course_id))
 
-@app.route('/course/<int:course_id>/review', methods=['GET', 'POST'])
+@app.route('/course/<course_id>/review', methods=['GET', 'POST'])
 @login_required
 def add_review(course_id):
-    if current_user.user_type != 'student':
-        flash('Only students can submit reviews', 'danger')
-        return redirect(url_for('view_course', course_id=course_id))
-    
-    is_enrolled = db.session.execute(
-        select(Enrollment)
-        .where(Enrollment.student_id == current_user.user_id)
-        .where(Enrollment.course_id == course_id)
-    ).scalar_one_or_none()
-    
-    if not is_enrolled:
-        flash('You must enroll in the course before submitting a review', 'warning')
-        return redirect(url_for('view_course', course_id=course_id))
-    
-    existing_review = db.session.execute(
-        select(Review)
-        .where(Review.student_id == current_user.user_id)
-        .where(Review.course_id == course_id)
-    ).scalar_one_or_none()
-    
-    if existing_review:
-        flash('You have already reviewed this course', 'info')
-        return redirect(url_for('view_course', course_id=course_id))
-    
-    if request.method == 'POST':
+    course = db['courses'].find_one({'course_id': course_id})
+    if not course:
         try:
-            rating = int(request.form.get('rating'))
-            comment = request.form.get('comment', '').strip()
-            
-            if not (1 <= rating <= 5):
-                flash('Invalid rating value', 'danger')
-                return redirect(url_for('add_review', course_id=course_id))
-            
-            db.session.add(Review(
-                student_id=current_user.user_id,
-                course_id=course_id,
-                rating=rating,
-                comment=comment if comment else None
-            ))
-            db.session.commit()
-            flash('Thank you for your review!', 'success')
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+    if not course:
+        abort(404)
+    # Only students who are enrolled can review
+    enrollment = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course.get('course_id', str(course.get('_id')))})
+    if not enrollment:
+        flash('You must be enrolled to review this course.', 'warning')
+        return redirect(url_for('view_course', course_id=course_id))
+    if request.method == 'POST':
+        rating = int(request.form.get('rating', 0))
+        comment = request.form.get('comment', '').strip()
+        if not (1 <= rating <= 5):
+            flash('Rating must be between 1 and 5.', 'danger')
             return redirect(url_for('view_course', course_id=course_id))
-        except ValueError:
-            flash('Invalid rating value', 'danger')
-        except Exception as e:
-            db.session.rollback()
-            flash('Failed to submit review. Please try again.', 'danger')
-            print(f"Error submitting review: {str(e)}")
-    return render_template('main/add_review.html', course_id=course_id)
+        review_doc = {
+            'course_id': course.get('course_id', str(course.get('_id'))),
+            'student_id': current_user.user_id,
+            'rating': rating,
+            'comment': comment,
+            'created_at': datetime.utcnow()
+        }
+        db['reviews'].insert_one(review_doc)
+        flash('Review submitted!', 'success')
+        return redirect(url_for('view_course', course_id=course_id))
+    return redirect(url_for('view_course', course_id=course_id))
 
 # Content management routes
-@app.route('/course/<int:course_id>/content/<int:content_id>/progress', methods=['POST'])
+@app.route('/course/<course_id>/content/<content_id>/progress', methods=['POST'])
 @login_required
 def update_content_progress(course_id, content_id):
-    enrollment = db.session.execute(
-        select(Enrollment)
-        .where(Enrollment.student_id == current_user.user_id)
-        .where(Enrollment.course_id == course_id)
-    ).scalar_one_or_none()
+    enrollment = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course_id})
     
     if not enrollment:
         return jsonify({'success': False, 'error': 'Not enrolled'}), 403
     
     try:
         progress_data = request.json.get('progress', 0)
-        
-        progress = db.session.execute(
-            select(UserVideoProgress)
-            .where(UserVideoProgress.user_id == current_user.user_id)
-            .where(UserVideoProgress.content_id == content_id)
-        ).scalar_one_or_none()
-        
+        progress = db['user_video_progress'].find_one({'user_id': current_user.user_id, 'content_id': content_id})
         if not progress:
-            progress = UserVideoProgress(
-                user_id=current_user.user_id,
-                content_id=content_id,
-                progress=progress_data
-            )
-            db.session.add(progress)
+            db['user_video_progress'].insert_one({
+                'user_id': current_user.user_id,
+                'content_id': content_id,
+                'progress': progress_data,
+                'course_id': course_id
+            })
         else:
-            progress.progress = max(progress.progress, progress_data)  # Only update if new progress is higher
-            progress.last_watched = datetime.utcnow()
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'progress': progress.progress
-        })
+            db['user_video_progress'].update_one({'_id': progress['_id']}, {'$set': {'progress': max(progress.get('progress', 0), progress_data)}})
+        return jsonify({'success': True, 'progress': progress_data})
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/course/<int:course_id>/content/<int:content_id>/complete', methods=['POST'])
+@app.route('/course/<course_id>/content/<content_id>/complete', methods=['POST'])
 @login_required
 def mark_content_completed(course_id, content_id):
-    enrollment = db.session.execute(
-        select(Enrollment)
-        .where(Enrollment.student_id == current_user.user_id)
-        .where(Enrollment.course_id == course_id)
-    ).scalar_one_or_none()
+    enrollment = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course_id})
     
     if not enrollment:
         return jsonify({'success': False, 'error': 'Not enrolled'}), 403
     
     try:
-        progress = db.session.execute(
-            select(UserVideoProgress)
-            .where(UserVideoProgress.user_id == current_user.user_id)
-            .where(UserVideoProgress.content_id == content_id)
-        ).scalar_one_or_none()
-        
+        progress = db['user_video_progress'].find_one({'user_id': current_user.user_id, 'content_id': content_id})
         if not progress:
-            progress = UserVideoProgress(
-                user_id=current_user.user_id,
-                content_id=content_id,
-                completed=True,
-                progress=100
-            )
-            db.session.add(progress)
+            db['user_video_progress'].insert_one({
+                'user_id': current_user.user_id,
+                'content_id': content_id,
+                'completed': True,
+                'progress': 100,
+                'course_id': course_id
+            })
         else:
-            progress.completed = True
-            progress.progress = 100
-            progress.last_watched = datetime.utcnow()
-        
+            db['user_video_progress'].update_one({'_id': progress['_id']}, {'$set': {'completed': True, 'progress': 100}})
         # Update overall course progress
-        all_content = db.session.execute(
-            select(CourseContent).where(CourseContent.course_id == course_id)
-        ).scalars().all()
-        
-        completed_count = db.session.execute(
-            select(func.count(UserVideoProgress.id))
-            .join(CourseContent)
-            .where(UserVideoProgress.user_id == current_user.user_id)
-            .where(CourseContent.course_id == course_id)
-            .where(UserVideoProgress.completed == True)
-        ).scalar()
-        
-        enrollment.progress = int((completed_count / len(all_content)) * 100) if all_content else 0
-        
+        all_content = list(db['course_content'].find({'course_id': course_id}))
+        completed_count = db['user_video_progress'].count_documents({'user_id': current_user.user_id, 'course_id': course_id, 'completed': True})
+        enrollment_progress = int((completed_count / len(all_content)) * 100) if all_content else 0
         # Check if course is completed
-        if enrollment.progress == 100:
-            enrollment.completed = True
-            enrollment.completion_date = datetime.utcnow()
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'progress': enrollment.progress,
-            'completed': enrollment.completed
-        })
+        if enrollment_progress == 100:
+            db['enrollments'].update_one({'_id': enrollment['_id']}, {'$set': {'completed': True, 'completion_date': datetime.utcnow()}})
+        db['enrollments'].update_one({'_id': enrollment['_id']}, {'$set': {'progress': enrollment_progress}})
+        return jsonify({'success': True, 'progress': enrollment_progress, 'completed': enrollment_progress == 100})
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/course/<int:course_id>/content/<int:content_id>')
+@app.route('/course/<course_id>/content/<content_id>')
 @login_required
 def view_course_content(course_id, content_id):
-    enrollment = db.session.execute(
-        select(Enrollment)
-        .where(Enrollment.student_id == current_user.user_id)
-        .where(Enrollment.course_id == course_id)
-    ).scalar_one_or_none()
+    enrollment = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course_id})
     
     if not enrollment:
         flash('You need to enroll in this course first', 'warning')
         return redirect(url_for('view_course', course_id=course_id))
     
-    content = db.session.get(CourseContent, content_id)
-    if not content or content.course_id != course_id:
+    content = db['course_content'].find_one({'course_id': course_id, 'content_id': content_id})
+    if not content or content['course_id'] != course_id:
         abort(404)
     
-    all_content = db.session.execute(
-        select(CourseContent)
-        .where(CourseContent.course_id == course_id)
-        .order_by(CourseContent.position)
-    ).scalars().all()
+    all_content = list(db['course_content'].find({'course_id': course_id}).sort('position'))
     
     # Get progress for current content
-    progress = db.session.execute(
-        select(UserVideoProgress)
-        .where(UserVideoProgress.user_id == current_user.user_id)
-        .where(UserVideoProgress.content_id == content_id)
-    ).scalar_one_or_none()
+    progress = db['user_video_progress'].find_one({'user_id': current_user.user_id, 'content_id': content_id})
     
     # Get progress for all content items
     for item in all_content:
-        item_progress = db.session.execute(
-            select(UserVideoProgress)
-            .where(UserVideoProgress.user_id == current_user.user_id)
-            .where(UserVideoProgress.content_id == item.content_id)
-        ).scalar_one_or_none()
+        item_progress = db['user_video_progress'].find_one({'user_id': current_user.user_id, 'content_id': item['content_id']})
         if item_progress:
-            item.progress_records = [item_progress]
+            item['progress_records'] = [item_progress]
     
     return render_template('course/video_player.html',
         course_id=course_id,
@@ -818,63 +674,82 @@ def view_course_content(course_id, content_id):
         progress=progress
     )
 
-@app.route('/teacher/courses/<int:course_id>/content', methods=['GET', 'POST'])
+@app.route('/teacher/courses/<course_id>/content', methods=['GET', 'POST'])
 @login_required
 def manage_course_content(course_id):
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
     
-    course = db.session.get(Course, course_id)
-    if not course or course.teacher_id != current_user.user_id:
+    course = None
+    try:
+        int_course_id = int(course_id)
+        course = db['courses'].find_one({'course_id': int_course_id})
+    except (ValueError, TypeError):
+        pass
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+    if not course or course['teacher_id'] != current_user.user_id:
         abort(404)
     
+    # Ensure course_id is always set for the template
+    course['course_id'] = course.get('course_id', str(course.get('_id')))
+
+    lookup_id = course.get('course_id', str(course.get('_id')))
+    content_items = list(db['course_content'].find({'course_id': lookup_id}).sort('position'))
+    
     if request.method == 'POST':
-        if 'reorder' in request.form:
+        if 'delete' in request.form:
+            try:
+                content_id = request.form.get('content_id')
+                # Always use string course_id and content_id for deletion
+                db['course_content'].delete_one({'course_id': str(course['course_id']), 'content_id': str(content_id)})
+            except Exception as e:
+                print(f"[ERROR] Failed to delete content: {e}")
+            return redirect(url_for('manage_course_content', course_id=course['course_id']))
+        elif 'reorder' in request.form:
             try:
                 order = request.form.getlist('content_order[]')
                 for idx, content_id in enumerate(order, start=1):
-                    content = db.session.get(CourseContent, content_id)
+                    content = db['course_content'].find_one({'course_id': str(course['course_id']), 'content_id': str(content_id)})
                     if content:
-                        content.position = idx
-                db.session.commit()
-                flash('Content reordered successfully!', 'success')
+                        db['course_content'].update_one({'course_id': str(course['course_id']), 'content_id': str(content_id)}, {'$set': {'position': idx}})
+                return redirect(url_for('manage_course_content', course_id=course['course_id']))
             except Exception as e:
-                db.session.rollback()
-                flash('Failed to reorder content', 'danger')
-        elif 'delete' in request.form:
-            try:
-                content_id = request.form.get('content_id')
-                content = db.session.get(CourseContent, content_id)
-                if content:
-                    db.session.delete(content)
-                    db.session.commit()
-                    flash('Content deleted successfully!', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash('Failed to delete content', 'danger')
-        return redirect(url_for('manage_course_content', course_id=course_id))
-    
-    content_items = db.session.execute(
-        select(CourseContent)
-        .where(CourseContent.course_id == course_id)
-        .order_by(CourseContent.position)
-    ).scalars().all()
+                print(f"[ERROR] Failed to reorder content: {e}")
+                return redirect(url_for('manage_course_content', course_id=course['course_id']))
+        return redirect(url_for('manage_course_content', course_id=course['course_id']))
     
     return render_template('dashboard/teacher/manage_content.html',
         course=course,
         content_items=content_items
     )
 
-@app.route('/teacher/courses/<int:course_id>/content/add', methods=['GET', 'POST'])
+@app.route('/teacher/courses/<course_id>/content/add', methods=['GET', 'POST'])
 @login_required
 def add_course_content(course_id):
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
     
-    course = db.session.get(Course, course_id)
-    if not course or course.teacher_id != current_user.user_id:
+    course = None
+    try:
+        int_course_id = int(course_id)
+        course = db['courses'].find_one({'course_id': int_course_id})
+    except (ValueError, TypeError):
+        pass
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+    if not course or course['teacher_id'] != current_user.user_id:
         abort(404)
-    
+
+    # Ensure course_id is always set for the template
+    course['course_id'] = course.get('course_id', str(course.get('_id')))
+
     if request.method == 'POST':
         try:
             title = request.form.get('title')
@@ -883,31 +758,71 @@ def add_course_content(course_id):
             description = request.form.get('description', '')
             
             if not all([title, content_type, url]):
-                flash('Title, type, and URL are required', 'danger')
-                return redirect(url_for('add_course_content', course_id=course_id))
+                return jsonify({'success': False, 'error': 'Title, type, and URL are required'}), 400
             
-            max_position = db.session.execute(
-                select(func.max(CourseContent.position))
-                .where(CourseContent.course_id == course_id)
-            ).scalar() or 0
+            # Safely get max_position
+            last_content = db['course_content'].find_one(sort=[('position', -1)])
+            max_position = last_content['position'] if last_content and 'position' in last_content else 0
             
-            db.session.add(CourseContent(
-                course_id=course_id,
-                title=title,
-                description=description,
-                content_type=content_type,
-                url=url,
-                position=max_position + 1
-            ))
-            db.session.commit()
-            flash('Content added successfully!', 'success')
-            return redirect(url_for('manage_course_content', course_id=course_id))
+            db['course_content'].insert_one({
+                'course_id': course['course_id'],
+                'content_id': str(ObjectId()),
+                'title': title,
+                'description': description,
+                'content_type': content_type,
+                'url': url,
+                'position': max_position + 1
+            })
+            # Redirect to manage content after successful add
+            return redirect(url_for('manage_course_content', course_id=course['course_id']))
         except Exception as e:
-            db.session.rollback()
-            flash('Failed to add content', 'danger')
-            print(f"Error adding content: {str(e)}")
+            return jsonify({'success': False, 'error': 'Failed to add content'}), 500
     
     return render_template('dashboard/teacher/add_content.html', course=course)
+
+@app.route('/teacher/courses/<course_id>/content/<content_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_course_content(course_id, content_id):
+    if current_user.user_type != 'teacher':
+        return redirect(url_for('home'))
+
+    # Find the course and content
+    course = None
+    try:
+        int_course_id = int(course_id)
+        course = db['courses'].find_one({'course_id': int_course_id})
+    except (ValueError, TypeError):
+        pass
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+    if not course or course['teacher_id'] != current_user.user_id:
+        abort(404)
+    course['course_id'] = course.get('course_id', str(course.get('_id')))
+
+    content = db['course_content'].find_one({'course_id': course['course_id'], 'content_id': content_id})
+    if not content:
+        abort(404)
+
+    if request.method == 'POST':
+        title = request.form.get('title')
+        content_type = request.form.get('content_type')
+        url = request.form.get('url')
+        description = request.form.get('description', '')
+        db['course_content'].update_one(
+            {'course_id': course['course_id'], 'content_id': content_id},
+            {'$set': {
+                'title': title,
+                'content_type': content_type,
+                'url': url,
+                'description': description
+            }}
+        )
+        return redirect(url_for('manage_course_content', course_id=course['course_id']))
+
+    return render_template('dashboard/teacher/add_content.html', course=course, content=content)
 
 @app.route('/teacher/profile', methods=['GET', 'POST'])
 @login_required
@@ -949,37 +864,28 @@ def teacher_profile():
                 
                 current_user.password_hash = generate_password_hash(new_password)
             
-            db.session.commit()
+            db['users'].update_one({'_id': ObjectId(current_user.user_id)}, {'$set': {
+                'first_name': current_user.first_name,
+                'last_name': current_user.last_name,
+                'bio': current_user.bio,
+                'profile_pic': current_user.profile_pic,
+                'password_hash': current_user.password_hash
+            }})
             flash('Profile updated successfully!', 'success')
             return redirect(url_for('teacher_profile'))
         except Exception as e:
-            db.session.rollback()
             flash('Failed to update profile', 'danger')
             print(f"Error updating profile: {str(e)}")
     
     # Get teacher's statistics
-    courses = db.session.execute(
-        select(Course).where(Course.teacher_id == current_user.user_id)
-    ).scalars().all()
-    
-    total_students = db.session.execute(
-        select(func.count(Enrollment.id))
-        .join(Course)
-        .where(Course.teacher_id == current_user.user_id)
-    ).scalar() or 0
-    
-    total_reviews = db.session.execute(
-        select(func.count(Review.review_id))
-        .join(Course)
-        .where(Course.teacher_id == current_user.user_id)
-    ).scalar() or 0
-    
-    avg_rating = db.session.execute(
-        select(func.avg(Review.rating))
-        .join(Course)
-        .where(Course.teacher_id == current_user.user_id)
-    ).scalar() or 0
-    
+    courses = list(db['courses'].find({'teacher_id': current_user.user_id}))
+    for course in courses:
+        course['course_id'] = course.get('course_id', str(course.get('_id')))
+    total_students = db['enrollments'].count_documents({'course_id': {'$in': [c['course_id'] for c in courses]}})
+    total_reviews = db['reviews'].count_documents({'course_id': {'$in': [c['course_id'] for c in courses]}})
+    ratings = [r.get('rating', 0) for r in db['reviews'].find({'course_id': {'$in': [c['course_id'] for c in courses]}})]
+    total_reviews = len(ratings)
+    avg_rating = sum(ratings) / total_reviews if total_reviews > 0 else 0
     return render_template('dashboard/teacher/profile.html',
         stats={
             'total_courses': len(courses),
@@ -994,59 +900,58 @@ def teacher_profile():
 def teacher_earnings():
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
-    
-    # Get all courses by this teacher
-    courses = db.session.execute(
-        select(Course).where(Course.teacher_id == current_user.user_id)
-    ).scalars().all()
-    
-    # Calculate earnings per course and total
+    courses = list(db['courses'].find({'teacher_id': current_user.user_id}))
+    for course in courses:
+        course['course_id'] = course.get('course_id', str(course.get('_id')))
     course_earnings = []
     total_earnings = 0
     total_students = 0
-    
     for course in courses:
-        enrollments = db.session.execute(
-            select(Enrollment).where(Enrollment.course_id == course.course_id)
-        ).scalars().all()
-        
-        course_student_count = len(enrollments)
-        course_total = course.price * course_student_count
-        
+        enrollments = db['enrollments'].find({'course_id': course['course_id']})
+        course_student_count = len(list(enrollments))
+        course_total = course['price'] * course_student_count
         course_earnings.append({
             'course': course,
             'student_count': course_student_count,
             'total': course_total
         })
-        
         total_earnings += course_total
         total_students += course_student_count
-    
     return render_template('dashboard/teacher/earnings.html',
         course_earnings=course_earnings,
         total_earnings=total_earnings,
         total_students=total_students
     )
 
-@app.route('/teacher/edit_course/<int:course_id>', methods=['GET', 'POST'])
+@app.route('/teacher/edit_course/<course_id>', methods=['GET', 'POST'])
 @login_required
 def edit_course(course_id):
     if current_user.user_type != 'teacher':
         return redirect(url_for('home'))
     
-    course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.user_id:
+    course = None
+    try:
+        int_course_id = int(course_id)
+        course = db['courses'].find_one({'course_id': int_course_id})
+    except (ValueError, TypeError):
+        pass
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+    if course['teacher_id'] != current_user.user_id:
         abort(403)
     
     if request.method == 'POST':
         try:
-            course.title = request.form.get('title')
-            course.description = request.form.get('description')
-            course.price = float(request.form.get('price'))
-            course.category = request.form.get('category')
+            course['title'] = request.form.get('title')
+            course['description'] = request.form.get('description')
+            course['price'] = float(request.form.get('price'))
+            course['category'] = request.form.get('category')
             
             # Capitalize the first letter of the title
-            course.title = capitalize_first(course.title)
+            course['title'] = capitalize_first(course['title'])
             
             if 'thumbnail' in request.files:
                 file = request.files['thumbnail']
@@ -1054,17 +959,22 @@ def edit_course(course_id):
                     filename = secure_filename(f"course_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
                     file.save(os.path.join('static', 'images', 'course_thumbnails', filename))
                     # Delete old thumbnail if it exists
-                    if course.thumbnail_url:
-                        old_path = os.path.join('static', course.thumbnail_url)
+                    if course.get('thumbnail_url'):
+                        old_path = os.path.join('static', course['thumbnail_url'])
                         if os.path.exists(old_path):
                             os.remove(old_path)
-                    course.thumbnail_url = f"images/course_thumbnails/{filename}"
+                    course['thumbnail_url'] = f"images/course_thumbnails/{filename}"
             
-            db.session.commit()
+            db['courses'].update_one({'_id': ObjectId(course['_id'])}, {'$set': {
+                'title': course['title'],
+                'description': course['description'],
+                'price': course['price'],
+                'category': course['category'],
+                'thumbnail_url': course['thumbnail_url']
+            }})
             flash('Course updated successfully!', 'success')
             return redirect(url_for('manage_courses'))
         except Exception as e:
-            db.session.rollback()
             flash('Failed to update course.', 'danger')
             print(f"Error updating course: {str(e)}")
     
@@ -1083,48 +993,70 @@ def teacher_required(f):
 @login_required
 @teacher_required
 def delete_course(course_id):
-    course = Course.query.get_or_404(course_id)
-    
+    # Try to find by course_id (str or int), then fallback to _id
+    course = db['courses'].find_one({'course_id': course_id})
+    if not course:
+        try:
+            int_course_id = int(course_id)
+            course = db['courses'].find_one({'course_id': int_course_id})
+        except (ValueError, TypeError):
+            pass
+    if not course:
+        try:
+            course = db['courses'].find_one({'_id': ObjectId(course_id)})
+        except Exception:
+            course = None
+
+    if not course:
+        flash('Course not found.', 'error')
+        return redirect(url_for('teacher_dashboard'))
+
     # Ensure the course belongs to the current teacher
-    if course.teacher_id != current_user.user_id:
+    if course['teacher_id'] != current_user.user_id:
         flash('You do not have permission to delete this course.', 'error')
         return redirect(url_for('teacher_dashboard'))
-    
+
     try:
+        # Use the actual course_id for all related deletes
+        actual_course_id = course.get('course_id', str(course.get('_id')))
+
         # Delete course thumbnail if it exists
-        if course.thumbnail_url:
-            thumbnail_path = os.path.join('static', course.thumbnail_url)
+        if course.get('thumbnail_url'):
+            thumbnail_path = os.path.join('static', course['thumbnail_url'])
             if os.path.exists(thumbnail_path):
                 os.remove(thumbnail_path)
 
-        # Delete all associated data in the correct order to maintain referential integrity
-        # Delete course content
-        CourseContent.query.filter_by(course_id=course_id).delete()
-        
-        # Delete enrollments
-        Enrollment.query.filter_by(course_id=course_id).delete()
-        
-        # Delete reviews
-        Review.query.filter_by(course_id=course_id).delete()
-        
+        # Delete all associated data
+        db['course_content'].delete_many({'course_id': actual_course_id})
+        db['enrollments'].delete_many({'course_id': actual_course_id})
+        db['reviews'].delete_many({'course_id': actual_course_id})
+        # If you have user progress or other related collections, add them here:
+        # db['user_video_progress'].delete_many({'course_id': actual_course_id})
+
         # Finally delete the course itself
-        db.session.delete(course)
-        db.session.commit()
-        
+        db['courses'].delete_one({'_id': ObjectId(course['_id'])})
+
         flash('Course has been permanently deleted.', 'success')
     except Exception as e:
-        db.session.rollback()
         flash('An error occurred while deleting the course.', 'error')
         app.logger.error(f"Error deleting course {course_id}: {str(e)}")
     
     return redirect(url_for('teacher_dashboard'))
 
 def init_db():
-    with app.app_context():
-        # Drop the user_video_progress table
-        UserVideoProgress.__table__.drop(db.engine, checkfirst=True)
-        # Create all tables
-        db.create_all()
+    try:
+        with app.app_context():
+            db['user_video_progress'].drop()
+            db['users'].create_index([('username', 1)], unique=True)
+            db['users'].create_index([('email', 1)], unique=True)
+            db['courses'].create_index([('teacher_id', 1)])
+            db['enrollments'].create_index([('student_id', 1), ('course_id', 1)])
+            db['reviews'].create_index([('student_id', 1), ('course_id', 1)])
+            db['course_content'].create_index([('course_id', 1)])
+    except ServerSelectionTimeoutError as e:
+        print("[MongoDB Connection Error]", e)
+        print("Check your Atlas cluster, network, and connection string.")
+        exit(1)
 
 # Register blueprints
 app.register_blueprint(teacher_forms_bp, url_prefix='/teacher')

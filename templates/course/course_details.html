@@ -36,12 +36,18 @@
                         ${{ course.price }}
                     </div>
                     {% if not course.is_enrolled %}
+                    {% set enroll_id = course.course_id or course.id or course._id %}
+                    {% if enroll_id %}
                     <button class="btn btn-primary" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);"
-                            onclick="enrollCourse('{{ course.id }}')">
+                            onclick="enrollCourse('{{ enroll_id }}')">
                         <i class="fas fa-shopping-cart"></i> Enroll Now
                     </button>
+                    {% else %}
+                    <span style="color: red; font-weight: bold;">Error: No course ID available for enrollment.</span>
+                    {% endif %}
                     {% elif first_content_id %}
-                    <a href="{{ url_for('view_course_content', course_id=course.id, content_id=first_content_id) }}" class="btn btn-success" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);">
+                    {% set content_course_id = course.course_id or course.id or course._id %}
+                    <a href="{{ url_for('view_course_content', course_id=content_course_id, content_id=first_content_id) }}" class="btn btn-success" style="font-size: var(--font-size-lg); padding: var(--spacing-4) var(--spacing-8);">
                         <i class="fas fa-play-circle"></i> Continue Learning
                     </a>
                     {% else %}
@@ -211,11 +217,14 @@
         <p style="color: var(--neutral); margin-bottom: var(--spacing-6);">
             Are you sure you want to enroll in this course? You will be charged ${{ course.price }}.
         </p>
+        <form id="enrollForm" method="POST" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </form>
         <div style="display: flex; gap: var(--spacing-4); justify-content: flex-end;">
-            <button class="btn btn-neutral" onclick="closeModal()">
+            <button class="btn btn-neutral" onclick="closeModal()" type="button">
                 Cancel
             </button>
-            <button class="btn btn-primary" onclick="processEnrollment()">
+            <button class="btn btn-primary" onclick="submitEnrollment()" type="button">
                 Confirm Enrollment
             </button>
         </div>
@@ -226,6 +235,12 @@
 {% block scripts %}
 <script>
 function enrollCourse(courseId) {
+    console.log('Enroll courseId:', courseId); // Debug line
+    if (!courseId) {
+        alert('Error: No course ID available for enrollment.');
+        return;
+    }
+    document.getElementById('enrollForm').action = `/course/${courseId}/enroll`;
     document.getElementById('enrollModal').style.display = 'block';
 }
 
@@ -233,41 +248,10 @@ function closeModal() {
     document.getElementById('enrollModal').style.display = 'none';
 }
 
-function processEnrollment() {
-    // Show loading state
-    const enrollBtn = document.querySelector('.btn-primary');
-    LearnHub.showLoading(enrollBtn);
-    
-    // Process enrollment
-    fetch('/api/enroll', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            course_id: '{{ course.id }}'
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.reload();
-        } else {
-            alert(data.message || 'Failed to enroll. Please try again.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    })
-    .finally(() => {
-        LearnHub.hideLoading(enrollBtn);
-        closeModal();
-    });
+function submitEnrollment() {
+    document.getElementById('enrollForm').submit();
 }
 
-// Close modal when clicking outside
 window.onclick = function(event) {
     const modal = document.getElementById('enrollModal');
     if (event.target == modal) {

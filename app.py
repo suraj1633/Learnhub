@@ -500,15 +500,17 @@ def view_course(course_id):
             course = None
     if not course:
         abort(404)
+    # Ensure course_id is always set
+    course['course_id'] = course.get('course_id', str(course.get('_id')))
     # Add instructor info
     course['instructor'] = db['users'].find_one({'user_id': course['teacher_id']})
     # Add is_enrolled for current user
     is_enrolled = False
     if current_user.is_authenticated and current_user.user_type == 'student':
-        is_enrolled = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course.get('course_id', str(course.get('_id')))} ) is not None
+        is_enrolled = db['enrollments'].find_one({'student_id': current_user.user_id, 'course_id': course['course_id']} ) is not None
     course['is_enrolled'] = is_enrolled
     # Fetch reviews and attach author info
-    reviews = list(db['reviews'].find({'course_id': course.get('course_id', str(course.get('_id')))}))
+    reviews = list(db['reviews'].find({'course_id': course['course_id']}))
     for review in reviews:
         review['author'] = db['users'].find_one({'user_id': review['student_id']})
     course['reviews'] = reviews
@@ -518,7 +520,7 @@ def view_course(course_id):
     else:
         course['avg_rating'] = 0
     # Fetch first content_id for Continue Learning button
-    first_content = db['course_content'].find_one({'course_id': course.get('course_id', str(course.get('_id')))}, sort=[('position', 1)])
+    first_content = db['course_content'].find_one({'course_id': course['course_id']}, sort=[('position', 1)])
     first_content_id = first_content['content_id'] if first_content else None
     return render_template('course/course_details.html', course=course, first_content_id=first_content_id)
 
